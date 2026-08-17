@@ -1,0 +1,2685 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LTGPage — публикуй HTML-страницы за секунды</title>
+<meta name="description" content="LTGPage — сервис для мгновенной публикации HTML-страниц по прямой ссылке. Регистрация, личный кабинет, REST API и JWT-авторизация из коробки.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink: #14141c;
+    --ink-2: #1b1b28;
+    --ink-3: #23233333;
+    --panel: #1a1a25;
+    --paper: #f7f3e8;
+    --paper-ink: #1b1b18;
+    --paper-dim: #7a7568;
+    --text: #eae7de;
+    --text-dim: #9a9aa8;
+    --text-dimmer: #6c6c7c;
+    --accent: #ff4b2b;
+    --accent-2: #ffb454;
+    --mint: #7ee7c6;
+    --violet: #a89bff;
+    --line: rgba(255,255,255,0.09);
+    --line-soft: rgba(255,255,255,0.05);
+    --radius: 14px;
+    --radius-sm: 8px;
+    --maxw: 1180px;
+    --shadow-glow: 0 0 0 1px rgba(255,255,255,0.04), 0 20px 60px -20px rgba(0,0,0,0.6);
+  }
+
+  *,*::before,*::after{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  @media (prefers-reduced-motion: reduce){
+    html{ scroll-behavior:auto; }
+    *,*::before,*::after{ animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important; }
+  }
+
+  body{
+    margin:0;
+    overflow-x:hidden;
+    background:
+      radial-gradient(1200px 600px at 10% -10%, rgba(255,75,43,0.10), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(168,155,255,0.10), transparent 55%),
+      var(--ink);
+    color:var(--text);
+    font-family:'Inter', -apple-system, sans-serif;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  h1,h2,h3,h4{
+    font-family:'Space Grotesk', 'Inter', sans-serif;
+    margin:0;
+    font-weight:600;
+    letter-spacing:-0.01em;
+    color:#fdfcf8;
+  }
+
+  code, .mono{ font-family:'JetBrains Mono', monospace; }
+
+  a{ color:inherit; text-decoration:none; }
+  img{ max-width:100%; display:block; }
+  ul{ margin:0; padding:0; list-style:none; }
+  p{ margin:0; }
+
+  :focus-visible{
+    outline: 2px solid var(--accent-2);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  .wrap{
+    max-width:var(--maxw);
+    margin:0 auto;
+    padding:0 28px;
+  }
+
+  .eyebrow{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:12.5px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--accent-2);
+    padding:6px 12px;
+    border:1px solid rgba(255,180,84,0.28);
+    border-radius:100px;
+    background:rgba(255,180,84,0.06);
+  }
+  .eyebrow::before{
+    content:"";
+    width:6px; height:6px; border-radius:50%;
+    background:var(--mint);
+    box-shadow:0 0 0 3px rgba(126,231,198,0.18);
+    flex-shrink:0;
+  }
+
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    padding:13px 22px;
+    border-radius:10px;
+    font-weight:600;
+    font-size:15px;
+    cursor:pointer;
+    border:1px solid transparent;
+    transition:transform .15s ease, box-shadow .15s ease, background .15s ease, border-color .15s ease;
+    white-space:nowrap;
+  }
+  .btn:active{ transform:translateY(1px); }
+  .btn-primary{
+    background:linear-gradient(180deg, #ff5f3d, var(--accent));
+    color:#fff8f4;
+    box-shadow:0 10px 24px -10px rgba(255,75,43,0.65);
+  }
+  .btn-primary:hover{ box-shadow:0 14px 30px -10px rgba(255,75,43,0.8); transform:translateY(-1px); }
+  .btn-ghost{
+    background:rgba(255,255,255,0.03);
+    border-color:var(--line);
+    color:var(--text);
+  }
+  .btn-ghost:hover{ background:rgba(255,255,255,0.07); border-color:rgba(255,255,255,0.18); }
+  .btn-sm{ padding:9px 16px; font-size:13.5px; border-radius:8px; }
+  .btn-block{ width:100%; }
+
+  /* ---------- NAV ---------- */
+  header.site{
+    position:sticky; top:0; z-index:100;
+    background:rgba(20,20,28,0.78);
+    backdrop-filter:blur(14px) saturate(140%);
+    border-bottom:1px solid var(--line-soft);
+  }
+  .nav{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:16px;
+    height:70px;
+    flex-wrap:nowrap;
+  }
+  .brand{
+    display:flex; align-items:center; gap:9px;
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700; font-size:18px; color:#fff;
+    flex-shrink:0;
+    white-space:nowrap;
+  }
+  .brand .tag-glyph{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:30px; height:30px; border-radius:8px;
+    background:linear-gradient(135deg, var(--accent), var(--accent-2));
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700; font-size:13px; color:#1a1108;
+    flex-shrink:0;
+  }
+  .brand .brand-sub{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px; color:var(--text-dimmer);
+    display:block; font-weight:500; letter-spacing:0.04em;
+    white-space:nowrap;
+  }
+  nav.links{
+    display:flex; align-items:center; gap:22px;
+    min-width:0;
+  }
+  nav.links a{
+    font-size:14px; color:var(--text-dim); font-weight:500;
+    transition:color .15s ease; position:relative;
+    white-space:nowrap;
+  }
+  nav.links a:hover{ color:var(--text); }
+  .nav-actions{
+    display:flex; align-items:center; gap:10px;
+    flex-shrink:0;
+  }
+  .nav-actions .btn{ white-space:nowrap; }
+  .nav-toggle{
+    display:none;
+    background:none; border:1px solid var(--line); border-radius:8px;
+    width:40px; height:40px; color:var(--text); cursor:pointer;
+    align-items:center; justify-content:center;
+    flex-shrink:0;
+    font-size:16px;
+  }
+
+  /* mobile nav drawer (class-driven, not inline styles) */
+  .mobile-drawer{
+    display:none;
+    flex-direction:column;
+    gap:2px;
+    position:absolute;
+    top:70px; left:0; right:0;
+    background:#14141c;
+    border-bottom:1px solid var(--line);
+    padding:10px 20px 16px;
+    max-height:calc(100vh - 70px);
+    overflow-y:auto;
+    z-index:200;
+  }
+  .mobile-drawer.open{ display:flex; }
+  .mobile-drawer a{
+    padding:13px 4px;
+    font-size:15px; color:var(--text-dim); font-weight:500;
+    border-bottom:1px solid var(--line-soft);
+  }
+  .mobile-drawer a:last-child{ border-bottom:none; }
+  .mobile-drawer a:hover{ color:#fff; }
+  .drawer-auth{
+    display:none;
+    flex-direction:column;
+    gap:10px;
+    margin-top:16px;
+    padding-top:16px;
+    border-top:1px solid var(--line);
+  }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    padding:88px 0 70px;
+    position:relative;
+    overflow:hidden;
+  }
+  .hero-top{
+    display:grid;
+    grid-template-columns:1.05fr 0.95fr;
+    gap:60px;
+    align-items:center;
+  }
+  .hero h1{
+    font-size:clamp(34px, 4.4vw, 56px);
+    line-height:1.06;
+    margin:20px 0 22px;
+  }
+  .hero h1 .hl{
+    background:linear-gradient(100deg, var(--accent-2), var(--accent) 70%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .hero p.lead{
+    font-size:17.5px; color:var(--text-dim); max-width:520px; margin-bottom:32px;
+  }
+  .hero-ctas{ display:flex; gap:14px; flex-wrap:wrap; margin-bottom:34px; }
+  .hero-note{
+    display:flex; align-items:center; gap:10px;
+    font-size:13px; color:var(--text-dimmer);
+    font-family:'JetBrains Mono', monospace;
+  }
+  .avatars{ display:flex; }
+  .avatars span{
+    width:24px; height:24px; border-radius:50%;
+    border:2px solid var(--ink);
+    margin-left:-8px;
+    background:linear-gradient(135deg,var(--violet),var(--accent-2));
+  }
+  .avatars span:first-child{ margin-left:0; }
+
+  /* editor/preview signature block */
+  .demo{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:16px;
+    box-shadow:var(--shadow-glow);
+    overflow:hidden;
+    transform:rotate(0.4deg);
+  }
+  .demo-bar{
+    display:flex; align-items:center; gap:8px;
+    padding:12px 14px;
+    border-bottom:1px solid var(--line);
+    background:rgba(255,255,255,0.02);
+  }
+  .demo-bar .dot{ width:10px; height:10px; border-radius:50%; }
+  .demo-bar .dot:nth-child(1){ background:#ff5f56; }
+  .demo-bar .dot:nth-child(2){ background:#ffbd2e; }
+  .demo-bar .dot:nth-child(3){ background:#27c93f; }
+  .demo-bar .file{
+    margin-left:8px; font-family:'JetBrains Mono',monospace; font-size:12px;
+    color:var(--text-dimmer);
+  }
+  .demo-split{ display:grid; grid-template-columns:1fr 1fr; }
+  .demo-pane{ min-height:260px; }
+  .editor-pane{
+    padding:18px 18px 20px;
+    border-right:1px solid var(--line);
+    font-family:'JetBrains Mono', monospace;
+    font-size:12.6px;
+    line-height:1.75;
+    color:#c9c6d8;
+    white-space:pre-wrap;
+    word-break:break-word;
+  }
+  .editor-pane .tag{ color:var(--violet); }
+  .editor-pane .attr{ color:var(--accent-2); }
+  .editor-pane .str{ color:var(--mint); }
+  .editor-pane .cur{
+    display:inline-block; width:6px; height:13px;
+    background:var(--accent-2); vertical-align:-2px;
+    animation:blink 1s step-end infinite;
+  }
+  @keyframes blink{ 50%{ opacity:0; } }
+  .preview-pane{
+    background:var(--paper);
+    color:var(--paper-ink);
+    padding:0;
+    display:flex; flex-direction:column;
+  }
+  .preview-url{
+    display:flex; align-items:center; gap:8px;
+    padding:9px 14px;
+    background:#eee9db;
+    border-bottom:1px solid #ddd6c2;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px; color:var(--paper-dim);
+  }
+  .preview-url .lock{ color:#5c8a5c; }
+  .preview-body{
+    padding:26px 22px;
+    flex:1;
+    display:flex; flex-direction:column; justify-content:center; gap:10px;
+  }
+  .preview-body .pb-badge{
+    font-family:'JetBrains Mono',monospace; font-size:10.5px;
+    text-transform:uppercase; letter-spacing:0.06em;
+    color:#a35b3f; background:#f0d9b8; display:inline-block;
+    padding:3px 9px; border-radius:100px; width:max-content;
+  }
+  .preview-body h4{ color:var(--paper-ink); font-size:19px; margin-top:6px; }
+  .preview-body p{ color:#5c584d; font-size:13px; }
+  .preview-body .pb-btn{
+    margin-top:6px; width:max-content;
+    background:var(--paper-ink); color:var(--paper);
+    padding:8px 16px; border-radius:7px; font-size:12.5px; font-weight:600;
+  }
+  .demo-footer{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 16px;
+    border-top:1px solid var(--line);
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px; color:var(--text-dimmer);
+  }
+  .live-dot{ display:inline-flex; align-items:center; gap:6px; color:var(--mint); }
+  .live-dot::before{
+    content:""; width:6px; height:6px; border-radius:50%; background:var(--mint);
+    box-shadow:0 0 0 3px rgba(126,231,198,0.18);
+    animation:pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:0.35;} }
+
+  .hero-strip{
+    margin-top:64px;
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+    border-radius:14px;
+    overflow:hidden;
+  }
+  .hero-strip .stat{
+    background:var(--ink-2);
+    padding:20px 22px;
+  }
+  .hero-strip .stat .num{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:26px; font-weight:700; color:#fff;
+  }
+  .hero-strip .stat .lbl{
+    font-size:12.5px; color:var(--text-dimmer); margin-top:4px;
+  }
+
+  /* ---------- SECTION shared ---------- */
+  section{ padding:100px 0; }
+  .section-head{
+    max-width:640px;
+    margin:0 auto 56px;
+    text-align:center;
+  }
+  .section-head.left{ margin:0 0 48px; text-align:left; }
+  .section-head h2{
+    font-size:clamp(26px,3.2vw,38px);
+    margin:16px 0 14px;
+  }
+  .section-head p{ color:var(--text-dim); font-size:16px; }
+  .divider{
+    height:1px;
+    background:linear-gradient(90deg, transparent, var(--line), transparent);
+    border:none; margin:0;
+  }
+
+  /* ---------- LOGOS / USE FOR ---------- */
+  .usefor{ padding:52px 0; }
+  .usefor-row{
+    display:flex; align-items:center; justify-content:center; gap:14px;
+    flex-wrap:wrap;
+  }
+  .chip{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12.5px;
+    color:var(--text-dim);
+    border:1px dashed var(--line);
+    padding:8px 15px;
+    border-radius:100px;
+  }
+
+  /* ---------- FEATURES ---------- */
+  .grid-features{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:20px;
+  }
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:26px 24px;
+    transition:border-color .2s ease, transform .2s ease, background .2s ease;
+  }
+  .card:hover{ border-color:rgba(255,255,255,0.18); transform:translateY(-3px); background:#1e1e2c; }
+  .card .icon{
+    width:42px; height:42px;
+    border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono',monospace; font-weight:700; font-size:16px;
+    margin-bottom:18px;
+    color:#1a1108;
+  }
+  .card h3{ font-size:17px; margin-bottom:9px; }
+  .card p{ font-size:14px; color:var(--text-dim); }
+  .status{
+    display:inline-flex; align-items:center; gap:6px;
+    font-family:'JetBrains Mono',monospace; font-size:10.5px;
+    letter-spacing:0.04em; text-transform:uppercase;
+    padding:4px 9px 4px 7px; border-radius:6px;
+    border:1px solid;
+  }
+  .status::before{
+    content:""; width:5px; height:5px; border-radius:50%; flex-shrink:0;
+  }
+  .card .status{ margin-top:14px; }
+  .status.live{ background:rgba(126,231,198,0.07); color:var(--mint); border-color:rgba(126,231,198,0.22); }
+  .status.live::before{ background:var(--mint); box-shadow:0 0 0 2px rgba(126,231,198,0.14); }
+  .status.soon{ background:rgba(255,180,84,0.07); color:var(--accent-2); border-color:rgba(255,180,84,0.22); }
+  .status.soon::before{ background:var(--accent-2); box-shadow:0 0 0 2px rgba(255,180,84,0.14); }
+
+  /* ---------- STEPS ---------- */
+  .steps{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:24px;
+  }
+  .step{
+    position:relative;
+    padding:30px 24px 26px;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:linear-gradient(180deg, rgba(255,255,255,0.025), transparent);
+  }
+  .step .step-num{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:44px; font-weight:700;
+    color:transparent;
+    -webkit-text-stroke:1.4px rgba(255,255,255,0.18);
+    margin-bottom:6px;
+  }
+  .step h3{ font-size:17.5px; margin-bottom:10px; }
+  .step p{ font-size:14px; color:var(--text-dim); }
+  .step code{
+    display:block; margin-top:14px;
+    font-size:11.5px; background:rgba(0,0,0,0.35);
+    border:1px solid var(--line); border-radius:7px;
+    padding:9px 11px; color:var(--mint); overflow-x:auto;
+  }
+  .step-arrow{
+    display:flex; align-items:center; justify-content:center;
+    color:var(--text-dimmer); font-size:20px;
+  }
+
+  /* ---------- API SHOWCASE ---------- */
+  .api-block{
+    display:grid;
+    grid-template-columns:0.85fr 1.15fr;
+    gap:40px;
+    align-items:center;
+  }
+  .api-list{ display:flex; flex-direction:column; gap:14px; }
+  .api-item{
+    display:flex; gap:14px; align-items:flex-start;
+    padding:16px;
+    border:1px solid var(--line-soft);
+    border-radius:11px;
+  }
+  .api-item.active{ border-color:rgba(255,180,84,0.35); background:rgba(255,180,84,0.05); }
+  .method{
+    font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700;
+    padding:4px 8px; border-radius:6px; flex-shrink:0; margin-top:2px;
+  }
+  .method.post{ background:rgba(255,75,43,0.15); color:#ff8266; }
+  .method.get{ background:rgba(126,231,198,0.15); color:var(--mint); }
+  .method.patch{ background:rgba(168,155,255,0.15); color:var(--violet); }
+  .api-item .path{ font-family:'JetBrains Mono',monospace; font-size:13px; color:#fff; }
+  .api-item .desc{ font-size:13px; color:var(--text-dim); margin-top:4px; }
+
+  .code-window{
+    background:#101017;
+    border:1px solid var(--line);
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow:var(--shadow-glow);
+  }
+  .code-window .demo-bar{ background:rgba(255,255,255,0.02); }
+  .code-window pre{
+    margin:0; padding:22px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.8px; line-height:1.85;
+    color:#c9c6d8; overflow-x:auto;
+  }
+  .code-window .c1{ color:var(--text-dimmer); }
+  .code-window .c2{ color:var(--accent-2); }
+  .code-window .c3{ color:var(--mint); }
+  .code-window .c4{ color:var(--violet); }
+  .copy-btn{
+    position:relative;
+    font-family:'JetBrains Mono',monospace; font-size:11px;
+    color:var(--text-dimmer);
+    background:none; border:1px solid var(--line);
+    border-radius:6px; padding:5px 10px; margin-left:auto;
+    cursor:pointer;
+  }
+  .copy-btn:hover{ color:var(--text); border-color:rgba(255,255,255,0.2); }
+
+  /* ---------- DASHBOARD MOCKUP ---------- */
+  .dash-mock{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:16px;
+    box-shadow:var(--shadow-glow);
+    overflow:hidden;
+  }
+  .dash-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 20px; border-bottom:1px solid var(--line);
+  }
+  .dash-head h4{ font-size:15px; }
+  .dash-table{ padding:8px 10px; }
+  .dash-row{
+    display:grid;
+    grid-template-columns:2.2fr 1fr 1fr 0.9fr;
+    align-items:center;
+    gap:10px;
+    padding:14px 12px;
+    border-bottom:1px solid var(--line-soft);
+    font-size:13px;
+  }
+  .dash-row:last-child{ border-bottom:none; }
+  .dash-row.head-row{
+    font-family:'JetBrains Mono',monospace; font-size:10.5px;
+    text-transform:uppercase; letter-spacing:0.05em;
+    color:var(--text-dimmer);
+  }
+  .page-name{ display:flex; flex-direction:column; gap:3px; }
+  .page-name .title{ color:#fff; font-weight:500; }
+  .page-name .url{ font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--text-dimmer); }
+  .pill{
+    font-family:'JetBrains Mono',monospace; font-size:10.5px;
+    padding:3px 9px; border-radius:100px; width:max-content;
+  }
+  .pill.pub{ background:rgba(126,231,198,0.12); color:var(--mint); }
+  .pill.draft{ background:rgba(255,255,255,0.06); color:var(--text-dim); }
+
+  /* ---------- USE CASES ---------- */
+  .grid-cases{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:16px;
+  }
+  .case-card{
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:20px 18px;
+    background:var(--ink-2);
+  }
+  .case-card .em{ font-size:22px; margin-bottom:10px; display:block; }
+  .case-card h4{ font-size:14.5px; margin-bottom:6px; }
+  .case-card p{ font-size:12.8px; color:var(--text-dimmer); }
+
+  /* ---------- LIVE PAGES (реальные страницы, опубликованные через LTGPage) ---------- */
+  .grid-portfolio{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:20px;
+  }
+  .port-card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px 22px 20px;
+    display:flex; flex-direction:column;
+    transition:border-color .2s ease, transform .2s ease;
+  }
+  .port-card:hover{ border-color:rgba(255,255,255,0.18); transform:translateY(-3px); }
+  .port-head{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:10px; margin-bottom:14px;
+  }
+  .port-date{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-dimmer); }
+  .port-card h3{ font-size:16px; margin-bottom:8px; line-height:1.3; }
+  .port-card p.pdesc{ font-size:13.3px; color:var(--text-dim); flex:1; margin-bottom:16px; }
+  .port-foot{
+    display:flex; align-items:center; justify-content:space-between;
+    padding-top:14px; border-top:1px solid var(--line-soft);
+  }
+  .port-id{ font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--text-dimmer); }
+  .port-link{
+    font-family:'JetBrains Mono',monospace; font-size:12px;
+    color:var(--accent-2); font-weight:600;
+  }
+  .port-link:hover{ text-decoration:underline; }
+  .port-link.disabled{ color:var(--text-dimmer); pointer-events:none; }
+  .portfolio-loading, .portfolio-empty, .portfolio-error{
+    grid-column:1 / -1;
+    padding:44px 20px;
+    text-align:center;
+    color:var(--text-dimmer);
+    font-size:13.5px;
+    border:1px dashed var(--line);
+    border-radius:var(--radius);
+  }
+  .portfolio-loading{ font-family:'JetBrains Mono',monospace; }
+
+  /* ---------- ROADMAP ---------- */
+  .roadmap{
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:8px;
+    background:var(--ink-2);
+  }
+  .rmap-row{
+    display:grid;
+    grid-template-columns:120px 1fr 110px;
+    align-items:center;
+    gap:16px;
+    padding:18px 20px;
+    border-bottom:1px solid var(--line-soft);
+  }
+  .rmap-row:last-child{ border-bottom:none; }
+  .rmap-ver{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px; color:var(--text-dimmer);
+  }
+  .rmap-title{ font-size:14.5px; color:#fff; margin-bottom:3px; font-weight:500; }
+  .rmap-desc{ font-size:13px; color:var(--text-dim); }
+  .rmap-status{
+    font-family:'JetBrains Mono',monospace; font-size:10.5px;
+    text-align:center; padding:5px 10px; border-radius:100px;
+    justify-self:end;
+  }
+  .rmap-status.now{ background:rgba(126,231,198,0.12); color:var(--mint); }
+  .rmap-status.next{ background:rgba(255,180,84,0.12); color:var(--accent-2); }
+  .rmap-status.later{ background:rgba(255,255,255,0.05); color:var(--text-dimmer); }
+
+  /* ---------- PRICING ---------- */
+  .grid-pricing{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:20px;
+    align-items:stretch;
+  }
+  .price-card{
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:30px 26px;
+    display:flex; flex-direction:column;
+    background:var(--panel);
+  }
+  .price-card.pop{
+    border-color:rgba(255,75,43,0.4);
+    background:linear-gradient(180deg, rgba(255,75,43,0.07), var(--panel) 40%);
+    position:relative;
+  }
+  .price-card.pop::before{
+    content:"Популярный";
+    position:absolute; top:-12px; left:26px;
+    background:var(--accent); color:#fff;
+    font-size:11px; font-family:'JetBrains Mono',monospace;
+    padding:4px 10px; border-radius:100px;
+  }
+  .price-card h3{ font-size:16px; color:var(--text-dim); font-weight:600; }
+  .price-card .price{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:38px; font-weight:700; color:#fff;
+    margin:14px 0 4px;
+  }
+  .price-card .price span{ font-size:14px; color:var(--text-dimmer); font-weight:500; }
+  .price-card .price-desc{ font-size:13px; color:var(--text-dimmer); margin-bottom:22px; }
+  .price-card ul{ display:flex; flex-direction:column; gap:11px; margin-bottom:26px; flex:1; }
+  .price-card li{
+    font-size:13.5px; color:var(--text-dim);
+    display:flex; gap:9px; align-items:flex-start;
+  }
+  .price-card li::before{ content:"✓"; color:var(--mint); font-weight:700; flex-shrink:0; }
+  .price-card li.off{ color:var(--text-dimmer); }
+  .price-card li.off::before{ content:"–"; color:var(--text-dimmer); }
+
+  /* ---------- FAQ ---------- */
+  .faq{ max-width:760px; margin:0 auto; }
+  .faq-item{
+    border-bottom:1px solid var(--line);
+  }
+  .faq-q{
+    width:100%;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:22px 4px;
+    background:none; border:none; text-align:left;
+    color:#fff; font-size:15.5px; font-weight:500;
+    font-family:'Inter',sans-serif;
+    cursor:pointer;
+  }
+  .faq-q .plus{
+    font-family:'JetBrains Mono',monospace;
+    color:var(--accent-2); font-size:18px; flex-shrink:0; margin-left:14px;
+    transition:transform .2s ease;
+  }
+  .faq-item.open .faq-q .plus{ transform:rotate(45deg); }
+  .faq-a{
+    max-height:0; overflow:hidden;
+    transition:max-height .25s ease;
+  }
+  .faq-a p{
+    padding:0 4px 22px; font-size:14.5px; color:var(--text-dim); max-width:640px;
+  }
+
+  /* ---------- CTA BAND ---------- */
+  .cta-band{
+    border-radius:20px;
+    padding:56px 50px;
+    background:
+      radial-gradient(600px 260px at 15% 0%, rgba(255,180,84,0.18), transparent 60%),
+      radial-gradient(600px 260px at 100% 100%, rgba(255,75,43,0.20), transparent 60%),
+      var(--ink-2);
+    border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:space-between;
+    gap:30px; flex-wrap:wrap;
+  }
+  .cta-band h2{ font-size:clamp(22px,2.6vw,30px); max-width:480px; }
+  .cta-band p{ color:var(--text-dim); margin-top:10px; max-width:460px; font-size:14.5px; }
+
+  /* ---------- FOOTER ---------- */
+  footer{
+    border-top:1px solid var(--line-soft);
+    padding:64px 0 30px;
+  }
+  .foot-grid{
+    display:grid;
+    grid-template-columns:1.4fr repeat(4,1fr);
+    gap:30px;
+    margin-bottom:50px;
+  }
+  .foot-brand p{ color:var(--text-dimmer); font-size:13.5px; margin-top:14px; max-width:260px; }
+  .foot-col h5{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px; text-transform:uppercase; letter-spacing:0.06em;
+    color:var(--text-dimmer); margin-bottom:16px; font-weight:600;
+  }
+  .foot-col ul{ display:flex; flex-direction:column; gap:11px; }
+  .foot-col a{ font-size:13.8px; color:var(--text-dim); }
+  .foot-col a:hover{ color:#fff; }
+  .foot-bottom{
+    display:flex; align-items:center; justify-content:space-between;
+    padding-top:26px; border-top:1px solid var(--line-soft);
+    font-size:12.8px; color:var(--text-dimmer);
+    flex-wrap:wrap; gap:14px;
+  }
+  .foot-bottom .badge-ver{
+    font-family:'JetBrains Mono',monospace;
+    border:1px solid var(--line); padding:4px 10px; border-radius:100px;
+  }
+
+  /* ---------- MODALS / TOAST ---------- */
+  .modal-overlay{
+    display:none;
+    position:fixed; inset:0; z-index:300;
+    background:rgba(10,10,14,0.7);
+    backdrop-filter:blur(4px);
+    align-items:center; justify-content:center;
+    padding:20px;
+  }
+  .modal-overlay.open{ display:flex; }
+  .modal{
+    width:100%; max-width:400px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:26px 26px 24px;
+    box-shadow:var(--shadow-glow);
+  }
+  .modal-wide{ max-width:560px; }
+  .modal-head{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:18px;
+  }
+  .modal-head h3{ font-size:17px; }
+  .modal-tabs{ display:flex; gap:6px; background:rgba(255,255,255,0.04); padding:4px; border-radius:9px; }
+  .modal-tab{
+    border:none; background:none; color:var(--text-dim);
+    font-size:13px; font-weight:600; padding:7px 14px; border-radius:7px; cursor:pointer;
+  }
+  .modal-tab.active{ background:var(--ink); color:#fff; }
+  .modal-close{
+    background:none; border:1px solid var(--line); color:var(--text-dim);
+    width:30px; height:30px; border-radius:8px; cursor:pointer;
+  }
+  .modal-close:hover{ color:#fff; }
+  .modal-form{ display:flex; flex-direction:column; gap:14px; }
+  .modal-form label{
+    display:flex; flex-direction:column; gap:6px;
+    font-size:12.8px; color:var(--text-dim); font-weight:500;
+  }
+  .modal-form label .opt{ color:var(--text-dimmer); font-weight:400; font-size:11.5px; }
+  .modal-form input, .modal-form textarea{
+    background:var(--ink);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:10px 12px;
+    color:#fff; font-size:14px; font-family:'Inter',sans-serif;
+    resize:vertical;
+  }
+  .modal-form input:focus, .modal-form textarea:focus{
+    outline:none; border-color:rgba(255,180,84,0.5);
+  }
+  .code-textarea{ font-family:'JetBrains Mono',monospace !important; font-size:12.5px !important; }
+  .form-error{
+    font-size:12.8px; color:#ff8266; display:none;
+  }
+  .form-error.show{ display:block; }
+  .modal-note{
+    margin-top:16px; text-align:center; font-size:11px; color:var(--text-dimmer);
+  }
+  .toast{
+    position:fixed; top:20px; right:20px; z-index:400;
+    background:var(--ink-2); border:1px solid var(--line);
+    border-radius:10px; padding:13px 18px;
+    font-size:13.5px; color:#fff;
+    box-shadow:var(--shadow-glow);
+    transform:translateX(120%); transition:transform .25s ease;
+    max-width:320px;
+  }
+  .toast.show{ transform:translateX(0); }
+  .toast.error{ border-color:rgba(255,75,43,0.4); }
+  .toast.success{ border-color:rgba(126,231,198,0.4); }
+  .dash-empty{
+    padding:40px 20px; text-align:center; color:var(--text-dimmer); font-size:13.5px;
+  }
+  .dash-loading{ padding:30px 20px; text-align:center; color:var(--text-dimmer); font-size:13px; font-family:'JetBrains Mono',monospace; }
+  .user-pill{
+    display:flex; align-items:center; gap:9px;
+    font-family:'JetBrains Mono',monospace; font-size:12.5px;
+    color:var(--text-dim); padding:8px 14px;
+    border:1px solid var(--line); border-radius:100px;
+  }
+  .user-pill .dotgreen{ width:6px; height:6px; border-radius:50%; background:var(--mint); }
+
+  /* ---------- ADMIN PANEL ---------- */
+  body.admin-mode #publicContent{ display:none; }
+  .admin-panel{ display:none; min-height:100vh; }
+  body.admin-mode .admin-panel{ display:block; }
+
+  .admin-header{
+    border-bottom:1px solid var(--line-soft);
+    background:rgba(20,20,28,0.9);
+  }
+  .admin-header-inner{
+    display:flex; align-items:center; justify-content:space-between;
+    height:70px; gap:16px;
+  }
+  .admin-brand{
+    display:flex; align-items:center; gap:9px;
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700; font-size:18px; color:#fff;
+  }
+  .admin-tag{
+    font-family:'JetBrains Mono',monospace; font-weight:600; font-size:11px;
+    color:var(--accent-2); border:1px solid rgba(255,180,84,0.3);
+    background:rgba(255,180,84,0.08);
+    padding:2px 8px; border-radius:6px; margin-left:4px; vertical-align:2px;
+  }
+  .admin-header-actions{ display:flex; align-items:center; gap:10px; }
+  .admin-body{ padding:36px 28px 80px; }
+  .admin-tabs{
+    display:flex; gap:6px; margin-bottom:26px;
+    border-bottom:1px solid var(--line);
+  }
+  .admin-tab{
+    background:none; border:none; cursor:pointer;
+    color:var(--text-dim); font-size:14.5px; font-weight:600;
+    font-family:'Inter',sans-serif;
+    padding:12px 4px; margin-right:22px;
+    border-bottom:2px solid transparent;
+    display:flex; align-items:center; gap:8px;
+  }
+  .admin-tab:hover{ color:#fff; }
+  .admin-tab.active{ color:#fff; border-bottom-color:var(--accent); }
+  .admin-count{
+    font-family:'JetBrains Mono',monospace; font-size:11px;
+    color:var(--text-dimmer); background:rgba(255,255,255,0.06);
+    padding:2px 7px; border-radius:100px;
+  }
+  .admin-toolbar{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:14px; margin-bottom:16px; flex-wrap:wrap;
+  }
+  .admin-toolbar input{
+    background:var(--panel); border:1px solid var(--line); border-radius:8px;
+    padding:10px 14px; color:#fff; font-size:13.5px; font-family:'Inter',sans-serif;
+    min-width:260px; flex:1; max-width:360px;
+  }
+  .admin-toolbar input:focus{ outline:none; border-color:rgba(255,180,84,0.4); }
+  .admin-table-wrap{
+    border:1px solid var(--line); border-radius:14px;
+    overflow-x:auto;
+    background:var(--panel);
+  }
+  .admin-table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  .admin-table th{
+    text-align:left; font-family:'JetBrains Mono',monospace; font-size:10.5px;
+    text-transform:uppercase; letter-spacing:0.05em; color:var(--text-dimmer);
+    padding:14px 16px; border-bottom:1px solid var(--line); white-space:nowrap;
+  }
+  .admin-table td{
+    padding:13px 16px; border-bottom:1px solid var(--line-soft);
+    color:var(--text-dim); vertical-align:middle;
+  }
+  .admin-table tr:last-child td{ border-bottom:none; }
+  .admin-table tr:hover td{ background:rgba(255,255,255,0.02); }
+  .admin-table td.id-col{ font-family:'JetBrains Mono',monospace; color:var(--text-dimmer); }
+  .admin-table td.title-col{ color:#fff; font-weight:500; max-width:280px; }
+  .admin-table .row-actions{ display:flex; gap:8px; justify-content:flex-end; white-space:nowrap; }
+  .admin-table .row-btn{
+    font-family:'JetBrains Mono',monospace; font-size:11.5px; font-weight:600;
+    background:none; border:1px solid var(--line); border-radius:6px;
+    padding:5px 10px; color:var(--text-dim); cursor:pointer;
+  }
+  .admin-table .row-btn:hover{ color:#fff; border-color:rgba(255,255,255,0.25); }
+  .admin-table .row-btn.danger{ color:#ff8266; border-color:rgba(255,75,43,0.25); }
+  .admin-table .row-btn.danger:hover{ background:rgba(255,75,43,0.08); }
+  .row-btn:focus-visible, .copy-btn:focus-visible, .admin-tab:focus-visible{
+    outline:none;
+    box-shadow:0 0 0 2px rgba(255,180,84,0.45);
+    border-radius:6px;
+  }
+  .role-badge{
+    font-family:'JetBrains Mono',monospace; font-size:10.5px; text-transform:uppercase;
+    letter-spacing:0.04em; padding:3px 9px; border-radius:6px; border:1px solid;
+  }
+  .role-badge.super{ color:var(--accent-2); border-color:rgba(255,180,84,0.3); background:rgba(255,180,84,0.07); }
+  .role-badge.staff{ color:var(--violet); border-color:rgba(168,155,255,0.3); background:rgba(168,155,255,0.07); }
+  .role-badge.user{ color:var(--text-dimmer); border-color:var(--line); background:rgba(255,255,255,0.03); }
+  .admin-loading, .admin-empty{
+    text-align:center; color:var(--text-dimmer); font-size:13px; padding:34px 16px !important;
+    font-family:'JetBrains Mono',monospace;
+  }
+
+  /* ---------- PAGE VIEWER (рендер клиентской страницы поверх нашего фронта) ---------- */
+  .page-viewer{
+    display:none;
+    position:fixed; inset:0; z-index:500;
+    background:#0c0c11;
+    flex-direction:column;
+  }
+  .page-viewer.open{ display:flex; }
+  .page-viewer-bar{
+    display:flex; align-items:center; gap:14px;
+    height:52px; flex-shrink:0;
+    padding:0 16px;
+    background:var(--ink-2);
+    border-bottom:1px solid var(--line);
+  }
+  .page-viewer-brand{
+    display:flex; align-items:center; gap:8px;
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14px;
+    color:#fff; flex-shrink:0;
+  }
+  .page-viewer-title{
+    font-family:'JetBrains Mono',monospace; font-size:12.5px;
+    color:var(--text-dimmer);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    flex:1; min-width:0;
+    padding-left:14px; border-left:1px solid var(--line);
+  }
+  .page-viewer-close{
+    flex-shrink:0;
+    font-family:'JetBrains Mono',monospace; font-size:12.5px; font-weight:600;
+    background:none; border:1px solid var(--line); border-radius:8px;
+    padding:7px 13px; color:var(--text-dim); cursor:pointer;
+  }
+  .page-viewer-close:hover{ color:#fff; border-color:rgba(255,255,255,0.25); }
+  .page-viewer-frame{
+    flex:1; width:100%; border:none; background:#fff;
+  }
+  @media (max-width:560px){
+    .page-viewer-brand span:last-child{ display:none; }
+    .page-viewer-title{ font-size:11px; }
+  }
+
+  /* ---------- ONLINE IDE (создание/редактирование страницы) ---------- */
+  .ide-overlay{
+    display:none;
+    position:fixed; inset:0; z-index:450;
+    background:#0c0c11;
+    flex-direction:column;
+  }
+  .ide-overlay.open{ display:flex; }
+  .ide-shell{ display:flex; flex-direction:column; height:100%; min-height:0; }
+  .ide-topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:16px; height:56px; flex-shrink:0;
+    padding:0 16px;
+    background:var(--ink-2);
+    border-bottom:1px solid var(--line);
+  }
+  .ide-topbar-left{ display:flex; align-items:center; gap:10px; min-width:0; flex:1; }
+  .ide-title-input{
+    background:none; border:none; outline:none;
+    color:#fff; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:16px;
+    min-width:0; flex:1; padding:6px 2px;
+    border-bottom:1px solid transparent;
+  }
+  .ide-title-input:focus{ border-bottom-color:rgba(255,180,84,0.4); }
+  .ide-title-input::placeholder{ color:var(--text-dimmer); font-weight:500; }
+  .ide-topbar-right{ display:flex; align-items:center; gap:10px; flex-shrink:0; }
+  .ide-status{
+    font-size:11px; color:var(--text-dimmer);
+    border:1px solid var(--line); padding:4px 10px; border-radius:100px;
+    white-space:nowrap;
+  }
+  .ide-subbar{
+    display:flex; align-items:center; gap:14px;
+    padding:9px 16px;
+    background:var(--ink);
+    border-bottom:1px solid var(--line-soft);
+    flex-shrink:0;
+  }
+  .ide-desc-input{
+    background:none; border:none; outline:none;
+    color:var(--text-dim); font-family:'Inter',sans-serif; font-size:13px;
+    flex:1; min-width:0; padding:4px 2px;
+  }
+  .ide-desc-input::placeholder{ color:var(--text-dimmer); }
+  .ide-subbar .form-error{ flex-shrink:0; }
+  .ide-body{
+    flex:1; min-height:0;
+    display:grid; grid-template-columns:1fr 1fr;
+  }
+  .ide-pane{ display:flex; flex-direction:column; min-height:0; min-width:0; }
+  .ide-editor-pane{ border-right:1px solid var(--line); }
+  .ide-pane-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:8px 14px;
+    background:var(--panel);
+    border-bottom:1px solid var(--line);
+    font-size:11px; color:var(--text-dimmer);
+    flex-shrink:0;
+  }
+  .ide-refresh-btn{
+    font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600;
+    background:rgba(255,255,255,0.03);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:5px 10px;
+    color:var(--text-dim);
+    cursor:pointer;
+    transition:background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .ide-refresh-btn:hover{ background:rgba(255,255,255,0.07); color:#fff; border-color:rgba(255,255,255,0.2); }
+  .ide-refresh-btn:active{ transform:translateY(1px); }
+  .ide-refresh-btn:focus-visible{
+    outline:none;
+    box-shadow:0 0 0 2px rgba(255,180,84,0.45);
+  }
+  .ide-textarea{
+    flex:1; width:100%; resize:none; border:none; outline:none;
+    background:#111116; color:#dcd9e6;
+    font-size:13.5px; line-height:1.7;
+    padding:16px 18px;
+    tab-size:2;
+  }
+  .ide-textarea::placeholder{ color:var(--text-dimmer); }
+  .ide-preview-frame{
+    flex:1; width:100%; border:none; background:#fff;
+  }
+  @media (max-width:900px){
+    .ide-body{ grid-template-columns:1fr; grid-template-rows:1fr 1fr; }
+    .ide-editor-pane{ border-right:none; border-bottom:1px solid var(--line); }
+  }
+  @media (max-width:560px){
+    .ide-topbar{ height:auto; padding:10px 14px; flex-wrap:wrap; }
+    .ide-topbar-right{ width:100%; justify-content:flex-end; }
+    .ide-status{ display:none; }
+    .ide-subbar{ padding:8px 14px; flex-wrap:wrap; }
+    .ide-textarea{ padding:12px 14px; font-size:13px; }
+  }
+
+  /* ---------- RESPONSIVE ---------- */
+  @media (max-width: 1140px){
+    nav.links{ display:none; }
+    .nav-toggle{ display:flex; }
+  }
+  @media (max-width: 980px){
+    .hero-top{ grid-template-columns:1fr; }
+    .hero-strip{ grid-template-columns:repeat(2,1fr); }
+    .grid-features{ grid-template-columns:repeat(2,1fr); }
+    .steps{ grid-template-columns:1fr; }
+    .api-block{ grid-template-columns:1fr; }
+    .grid-cases{ grid-template-columns:repeat(2,1fr); }
+    .grid-portfolio{ grid-template-columns:repeat(2,1fr); }
+    .grid-pricing{ grid-template-columns:1fr; }
+    .foot-grid{ grid-template-columns:1fr 1fr; }
+  }
+  @media (max-width: 760px){
+    .demo-split{ grid-template-columns:1fr; }
+    .editor-pane{ border-right:none; border-bottom:1px solid var(--line); }
+    .grid-features{ grid-template-columns:1fr; }
+    .grid-cases{ grid-template-columns:1fr; }
+    .grid-portfolio{ grid-template-columns:1fr; }
+    .rmap-row{ grid-template-columns:1fr; text-align:left; }
+    .rmap-status{ justify-self:start; }
+    .cta-band{ flex-direction:column; align-items:flex-start; padding:40px 26px; }
+    .cta-band > div:last-child{ width:100%; }
+    .cta-band > div:last-child .btn{ flex:1; }
+    .foot-grid{ grid-template-columns:1fr 1fr; gap:26px; }
+    section{ padding:64px 0; }
+    .wrap{ padding:0 20px; }
+    .dash-row{
+      grid-template-columns:1fr;
+      gap:6px;
+      padding:16px 14px;
+      position:relative;
+    }
+    .dash-row.head-row{ display:none; }
+    .dash-row .pill{ justify-self:start; }
+    .dash-row .port-date, .dash-row > span:nth-child(3){ font-size:12px; color:var(--text-dimmer); }
+    .dash-row > a.mono, .dash-row > span.mono{
+      position:absolute; top:14px; right:14px; font-size:12px;
+    }
+  }
+  @media (max-width: 560px){
+    .brand .brand-sub{ display:none; }
+    .brand{ font-size:16px; }
+    .hero-strip{ grid-template-columns:1fr 1fr; }
+    .hero-strip .stat{ padding:16px 16px; }
+    .hero-strip .stat .num{ font-size:21px; }
+    .grid-portfolio{ grid-template-columns:1fr; }
+    .foot-grid{ grid-template-columns:1fr; gap:30px; }
+    .foot-bottom{ flex-direction:column; align-items:flex-start; gap:10px; }
+    .modal{ padding:22px 18px 20px; }
+    .modal-tabs{ width:100%; }
+    .modal-tab{ flex:1; }
+    #navAuthActions .btn{ display:none; }
+    .drawer-auth{ display:flex; }
+  }
+  @media (max-width: 420px){
+    .wrap{ padding:0 16px; }
+    section{ padding:52px 0; }
+    .nav{ gap:8px; }
+    .nav-actions{ gap:7px; }
+    .btn-sm{ padding:8px 12px; font-size:12.5px; }
+    .hero h1{ font-size:28px; }
+    .hero p.lead{ font-size:15.5px; }
+    .hero-ctas .btn{ width:100%; }
+    .hero-ctas{ flex-direction:column; }
+    .eyebrow{ font-size:11px; padding:5px 10px; }
+    .demo-bar .file{ display:none; }
+    .price-card{ padding:24px 20px; }
+    .cta-band h2{ font-size:22px; }
+    .cta-band > div:last-child{ flex-direction:column; }
+    .admin-body{ padding:24px 16px 60px; }
+    .admin-header-inner{ padding:0; }
+    .admin-toolbar input{ min-width:0; max-width:none; width:100%; }
+    .admin-table{ font-size:12.5px; }
+    .admin-table th, .admin-table td{ padding:10px 10px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap nav">
+    <a href="#" class="brand">
+      <span class="tag-glyph">&lt;/&gt;</span>
+      <span>
+        LTGPage
+        <span class="brand-sub">page publishing engine</span>
+      </span>
+    </a>
+    <nav class="links">
+      <a href="#features">Возможности</a>
+      <a href="#how">Как это работает</a>
+      <a href="#api">API</a>
+      <a href="#portfolio">Проекты</a>
+      <a href="#pricing">Тарифы</a>
+      <a href="#roadmap">Дорожная карта</a>
+      <a href="#faq">Вопросы</a>
+    </nav>
+    <div class="nav-actions" id="navAuthActions">
+      <a href="#" class="btn btn-ghost btn-sm" id="btnLogin">Войти</a>
+      <a href="#" class="btn btn-primary btn-sm" id="btnRegister">Начать бесплатно</a>
+      <button class="nav-toggle" aria-label="Меню" id="navToggleBtn">☰</button>
+    </div>
+  </div>
+  <nav class="mobile-drawer" id="mobileDrawer">
+    <a href="#features">Возможности</a>
+    <a href="#how">Как это работает</a>
+    <a href="#api">API</a>
+    <a href="#portfolio">Проекты</a>
+    <a href="#pricing">Тарифы</a>
+    <a href="#roadmap">Дорожная карта</a>
+    <a href="#faq">Вопросы</a>
+    <div class="drawer-auth" id="drawerAuthActions"></div>
+  </nav>
+</header>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-overlay" id="authOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-tabs">
+        <button class="modal-tab active" data-tab="login">Вход</button>
+        <button class="modal-tab" data-tab="register">Регистрация</button>
+      </div>
+      <button class="modal-close" id="authClose" aria-label="Закрыть">✕</button>
+    </div>
+    <form id="loginForm" class="modal-form">
+      <label>Логин
+        <input type="text" name="username" required autocomplete="username">
+      </label>
+      <label>Пароль
+        <input type="password" name="password" required autocomplete="current-password">
+      </label>
+      <div class="form-error" id="loginError"></div>
+      <button type="submit" class="btn btn-primary btn-block">Войти</button>
+    </form>
+    <form id="registerForm" class="modal-form" style="display:none;">
+      <label>Логин
+        <input type="text" name="username" required autocomplete="username">
+      </label>
+      <label>Email <span class="opt">необязательно</span>
+        <input type="email" name="email" autocomplete="email">
+      </label>
+      <label>Пароль
+        <input type="password" name="password" required autocomplete="new-password">
+      </label>
+      <div class="form-error" id="registerError"></div>
+      <button type="submit" class="btn btn-primary btn-block">Создать аккаунт</button>
+    </form>
+    <p class="modal-note mono">api → dawletyar.pythonanywhere.com</p>
+  </div>
+</div>
+
+<div class="page-viewer" id="pageViewerOverlay">
+  <div class="page-viewer-bar">
+    <span class="page-viewer-brand"><span class="tag-glyph" style="width:24px;height:24px;font-size:11px;">&lt;/&gt;</span> LTGPage</span>
+    <span class="page-viewer-title" id="pageViewerLabel">Страница</span>
+    <button class="page-viewer-close" id="pageViewerClose">✕ Закрыть</button>
+  </div>
+  <iframe class="page-viewer-frame" id="pageViewerFrame" sandbox="allow-scripts allow-forms allow-popups allow-modals"></iframe>
+</div>
+
+<div class="ide-overlay" id="pageOverlay">
+  <form id="createPageForm" class="ide-shell">
+    <div class="ide-topbar">
+      <div class="ide-topbar-left">
+        <span class="tag-glyph" style="width:26px;height:26px;font-size:12px;flex-shrink:0;">&lt;/&gt;</span>
+        <input type="text" name="title" id="ideTitleInput" class="ide-title-input" placeholder="Название страницы" required maxlength="100" autocomplete="off">
+      </div>
+      <div class="ide-topbar-right">
+        <span class="ide-status mono" id="ideStatus">новая страница</span>
+        <button type="button" class="btn btn-ghost btn-sm" id="pageClose">Отмена</button>
+        <button type="submit" class="btn btn-primary btn-sm" id="pageSubmitBtn">Опубликовать</button>
+      </div>
+    </div>
+    <div class="ide-subbar">
+      <input type="text" name="description" id="ideDescInput" class="ide-desc-input" required minlength="5" maxlength="500" placeholder="Короткое описание — покажем в кабинете и на витрине" autocomplete="off">
+      <div class="form-error" id="pageError"></div>
+    </div>
+    <div class="ide-body">
+      <div class="ide-pane ide-editor-pane">
+        <div class="ide-pane-head">
+          <span class="mono">index.html</span>
+          <span class="mono" id="ideLineCount">0 строк</span>
+        </div>
+        <textarea name="html" id="ideHtmlInput" class="ide-textarea mono" spellcheck="false" required
+          placeholder="&lt;h1&gt;Привет, мир!&lt;/h1&gt;&#10;&lt;p&gt;Пиши HTML — справа появится живое превью.&lt;/p&gt;"></textarea>
+      </div>
+      <div class="ide-pane ide-preview-pane">
+        <div class="ide-pane-head">
+          <span class="mono">Превью</span>
+          <button type="button" class="ide-refresh-btn" id="ideRefreshBtn">↻ обновить</button>
+        </div>
+        <iframe id="idePreviewFrame" class="ide-preview-frame" sandbox="allow-scripts allow-forms allow-modals"></iframe>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div id="publicContent">
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-top">
+      <div>
+        <span class="eyebrow">v1.0 · первая версия сервиса</span>
+        <h1>Пиши HTML —<br>получай <span class="hl">рабочую ссылку</span><br>через пару секунд</h1>
+        <p class="lead">LTGPage — движок для публикации HTML-страниц. Вставляешь разметку, сохраняешь — и страница уже доступна по прямой ссылке, без хостинга, серверов и деплоя.</p>
+        <div class="hero-ctas">
+          <a href="#" class="btn btn-primary" id="btnHeroCreate">Создать первую страницу</a>
+          <a href="#how" class="btn btn-ghost">Как это устроено →</a>
+        </div>
+        <div class="hero-note">
+          <div class="avatars"><span></span><span></span><span></span></div>
+          <span>уже используют для лендингов, визиток и тестовых форм</span>
+        </div>
+      </div>
+
+      <div class="demo">
+        <div class="demo-bar">
+          <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+          <span class="file mono" id="fileLabel">promo.html</span>
+        </div>
+        <div class="demo-split">
+          <div class="demo-pane editor-pane" id="editorPane"></div>
+          <div class="demo-pane preview-pane">
+            <div class="preview-url"><span class="lock">🔒</span><span id="previewUrl">ltgpage.uz/p/8f3a1c</span></div>
+            <div class="preview-body" id="previewBody">
+              <span class="pb-badge">Акция</span>
+              <h4>Скидка 20% на первый заказ</h4>
+              <p>Промо-страница, опубликованная за один запрос к API.</p>
+              <span class="pb-btn">Забрать скидку</span>
+            </div>
+          </div>
+        </div>
+        <div class="demo-footer">
+          <span class="live-dot">опубликовано</span>
+          <span class="mono">/p/&lt;slug&gt;-&lt;id&gt;/</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-strip">
+      <div class="stat"><div class="num">&lt; 400мс</div><div class="lbl">среднее время публикации</div></div>
+      <div class="stat"><div class="num">JWT</div><div class="lbl">авторизация из коробки</div></div>
+      <div class="stat"><div class="num">REST</div><div class="lbl">полноценное API</div></div>
+      <div class="stat"><div class="num">1 файл</div><div class="lbl">никакого деплоя и сборки</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><hr class="divider"></div>
+
+<section class="usefor">
+  <div class="wrap">
+    <div class="usefor-row">
+      <span class="chip">// промо-лендинги</span>
+      <span class="chip">// визитки и портфолио</span>
+      <span class="chip">// тестовые формы сбора данных</span>
+      <span class="chip">// страницы для акций</span>
+      <span class="chip">// быстрые прототипы вёрстки</span>
+      <span class="chip">// техническая документация</span>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><hr class="divider"></div>
+
+<section id="features">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Возможности</span>
+      <h2>Всё, что нужно, чтобы разметка стала ссылкой</h2>
+      <p>Часть функций уже работает в текущей версии, часть — активно достраивается. Ниже честный статус каждой.</p>
+    </div>
+
+    <div class="grid-features">
+      <div class="card">
+        <div class="icon" style="background:linear-gradient(135deg,var(--accent),var(--accent-2));">01</div>
+        <h3>Мгновенная публикация</h3>
+        <p>Отправляешь HTML одним запросом — сервис сохраняет страницу и сразу выдаёт публичный адрес вида <code class="mono">/view/&lt;id&gt;/</code>.</p>
+        <span class="status live">Работает</span>
+      </div>
+      <div class="card">
+        <div class="icon" style="background:linear-gradient(135deg,var(--violet),#7d6bff);">02</div>
+        <h3>JWT-авторизация</h3>
+        <p>Регистрация и вход через токены доступа и обновления. Страницы привязаны к аккаунту — редактировать может только владелец.</p>
+        <span class="status live">Работает</span>
+      </div>
+      <div class="card">
+        <div class="icon" style="background:linear-gradient(135deg,var(--mint),#4fb896);">03</div>
+        <h3>Личный кабинет страниц</h3>
+        <p>Список всех созданных страниц с заголовком, описанием и датой изменения. Создание, просмотр и редактирование в одном месте.</p>
+        <span class="status live">Работает</span>
+      </div>
+      <div class="card">
+        <div class="icon" style="background:linear-gradient(135deg,#ffb454,#ff8a3d);">04</div>
+        <h3>Публичный просмотр без авторизации</h3>
+        <p>Опубликованную страницу может открыть любой человек по ссылке — вход или регистрация не требуются на стороне читателя.</p>
+        <span class="status live">Работает</span>
+      </div>
+      <div class="card">
+        <div class="icon" style="background:linear-gradient(135deg,#a89bff,#6f5cff);">05</div>
+        <h3>Свои домены</h3>
+        <p>Привязка собственного домена к странице или к аккаунту вместо стандартного адреса ltgpage.uz.</p>
+        <span class="status soon">В разработке</span>
+      </div>
+      <div class="card">
+        <div class="icon" style="background:linear-gradient(135deg,#7ee7c6,#3fb08a);">06</div>
+        <h3>История версий</h3>
+        <p>Откат страницы к предыдущей редакции и сравнение изменений между сохранениями.</p>
+        <span class="status soon">В разработке</span>
+      </div>
+      <div class="card">
+        <div class="icon" style="background:linear-gradient(135deg,#ff4b2b,#c9330f);">07</div>
+        <h3>Загрузка медиа</h3>
+        <p>Хранение изображений и файлов рядом со страницей вместо ссылок на внешние ресурсы.</p>
+        <span class="status soon">В разработке</span>
+      </div>
+      <div class="card">
+        <div class="icon" style="background:linear-gradient(135deg,#ffb454,#a35b3f);">08</div>
+        <h3>Аналитика переходов</h3>
+        <p>Счётчик просмотров, источники трафика и география посетителей для каждой опубликованной страницы.</p>
+        <span class="status soon">В разработке</span>
+      </div>
+      <div class="card">
+        <div class="icon" style="background:linear-gradient(135deg,#9a9aa8,#4c4c5a);">09</div>
+        <h3>Командный доступ</h3>
+        <p>Совместное редактирование страниц несколькими участниками с ролями внутри одного аккаунта.</p>
+        <span class="status soon">В разработке</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><hr class="divider"></div>
+
+<section id="how">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Как это работает</span>
+      <h2>От пустого поля до ссылки — три шага</h2>
+      <p>Никакой настройки сервера: весь процесс проходит через API сервиса.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <h3>Регистрация и токен</h3>
+        <p>Создаёшь аккаунт и получаешь пару JWT-токенов — доступа и обновления.</p>
+        <code>POST /api/user/<br>POST /api/token/</code>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <h3>Отправка HTML</h3>
+        <p>Передаёшь заголовок, короткое описание и саму HTML-разметку страницы.</p>
+        <code>POST /api/page/<br>{ title, description, html }</code>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <h3>Публичная ссылка готова</h3>
+        <p>Страница сразу доступна по адресу вида <code style="display:inline;padding:2px 5px;">/view/&lt;id&gt;/</code> — можно делиться где угодно.</p>
+        <code>GET /api/page/view/241/</code>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><hr class="divider"></div>
+
+<section id="api">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Для разработчиков</span>
+      <h2>Простое REST API поверх твоих страниц</h2>
+      <p>Все действия в кабинете — это тонкая обёртка над теми же эндпоинтами, которые доступны напрямую.</p>
+    </div>
+
+    <div class="api-block">
+      <div class="api-list">
+        <div class="api-item active">
+          <span class="method post">POST</span>
+          <div>
+            <div class="path">/api/page/</div>
+            <div class="desc">Создать новую страницу. Требует токен доступа.</div>
+          </div>
+        </div>
+        <div class="api-item">
+          <span class="method get">GET</span>
+          <div>
+            <div class="path">/api/page/</div>
+            <div class="desc">Список всех опубликованных страниц.</div>
+          </div>
+        </div>
+        <div class="api-item">
+          <span class="method patch">PATCH</span>
+          <div>
+            <div class="path">/api/page/&lt;id&gt;/</div>
+            <div class="desc">Обновить страницу. Доступно только владельцу.</div>
+          </div>
+        </div>
+        <div class="api-item">
+          <span class="method get">GET</span>
+          <div>
+            <div class="path">/api/page/view/&lt;id&gt;/</div>
+            <div class="desc">Отдаёт сырой HTML страницы — то, что видит посетитель.</div>
+          </div>
+        </div>
+        <div class="api-item">
+          <span class="method post">POST</span>
+          <div>
+            <div class="path">/api/token/</div>
+            <div class="desc">Получить пару JWT-токенов по логину и паролю.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="code-window">
+        <div class="demo-bar">
+          <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+          <span class="file mono">create_page.js</span>
+          <button class="copy-btn" id="copyBtn">скопировать</button>
+        </div>
+        <pre><span class="c1">// создаём и публикуем страницу одним запросом</span>
+<span class="c4">const</span> res = <span class="c4">await</span> fetch(<span class="c3">"https://dawletyar.pythonanywhere.com/api/page/"</span>, {
+  method: <span class="c3">"POST"</span>,
+  headers: {
+    <span class="c3">"Content-Type"</span>: <span class="c3">"application/json"</span>,
+    <span class="c3">"Authorization"</span>: <span class="c2">`Bearer ${accessToken}`</span>
+  },
+  body: JSON.stringify({
+    title: <span class="c3">"Промо-страница"</span>,
+    description: <span class="c3">"Скидка 20% на первый заказ"</span>,
+    html: <span class="c3">"&lt;h1&gt;Привет!&lt;/h1&gt;"</span>
+  })
+});
+
+<span class="c4">const</span> page = <span class="c4">await</span> res.json();
+<span class="c1">// page.id → адрес: /api/page/view/{page.id}/</span></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><hr class="divider"></div>
+
+<section>
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Личный кабинет</span>
+      <h2>Все страницы — в одном списке</h2>
+      <p>Заголовок, статус публикации и дата последнего изменения видны сразу, без лишних кликов.</p>
+    </div>
+
+    <div class="dash-mock">
+      <div class="dash-head">
+        <h4 id="dashTitle">Мои страницы</h4>
+        <a href="#" class="btn btn-primary btn-sm" id="btnNewPage">+ Новая страница</a>
+      </div>
+      <div class="dash-table" id="dashTable">
+        <div class="dash-row head-row">
+          <span>Название</span><span>Статус</span><span>Изменена</span><span>Ссылка</span>
+        </div>
+        <div class="dash-empty" id="dashEmpty">Войди в аккаунт, чтобы увидеть свои страницы — или создай первую прямо сейчас.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><hr class="divider"></div>
+
+<section>
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Сценарии использования</span>
+      <h2>Кому пригодится LTGPage</h2>
+      <p>Любая ситуация, где нужна отдельная HTML-страница без запуска отдельного проекта.</p>
+    </div>
+    <div class="grid-cases">
+      <div class="case-card"><span class="em">🎯</span><h4>Промо и акции</h4><p>Отдельная страница под каждую рекламную кампанию.</p></div>
+      <div class="case-card"><span class="em">🪪</span><h4>Визитки и портфолио</h4><p>Личная страница без хостинга и покупки домена.</p></div>
+      <div class="case-card"><span class="em">🧪</span><h4>Прототипы вёрстки</h4><p>Проверить, как выглядит макет, до переноса в основной проект.</p></div>
+      <div class="case-card"><span class="em">📋</span><h4>Формы сбора заявок</h4><p>Быстрая страница для сбора контактов на курс или мероприятие.</p></div>
+      <div class="case-card"><span class="em">📚</span><h4>Документация</h4><p>Технические заметки и инструкции, доступные по прямой ссылке.</p></div>
+      <div class="case-card"><span class="em">🎓</span><h4>Учебные проекты</h4><p>Публикация студенческих работ по HTML и CSS.</p></div>
+      <div class="case-card"><span class="em">🛍️</span><h4>Витрины товаров</h4><p>Простая карточка товара без полноценного магазина.</p></div>
+      <div class="case-card"><span class="em">📨</span><h4>Приглашения</h4><p>Страница-приглашение на мероприятие со ссылкой в один клик.</p></div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><hr class="divider"></div>
+
+<section id="portfolio">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Витрина</span>
+      <h2>Страницы, которые уже опубликовали через LTGPage</h2>
+      <p>Это не примеры для картинки — карточки ниже подтягиваются напрямую с сервера в реальном времени.</p>
+    </div>
+
+    <div class="grid-portfolio" id="portfolioGrid">
+      <div class="portfolio-loading">загружаю опубликованные страницы...</div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><hr class="divider"></div>
+
+<section id="roadmap">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Дорожная карта</span>
+      <h2>Это только первая версия</h2>
+      <p>LTGPage развивается открыто — вот что уже доступно и что появится в ближайших обновлениях.</p>
+    </div>
+
+    <div class="roadmap">
+      <div class="rmap-row">
+        <span class="rmap-ver mono">v1.0</span>
+        <div><div class="rmap-title">Публикация HTML и JWT-авторизация</div><div class="rmap-desc">Базовый цикл: регистрация, создание страницы, публичная ссылка.</div></div>
+        <span class="rmap-status now">Сейчас</span>
+      </div>
+      <div class="rmap-row">
+        <span class="rmap-ver mono">v1.1</span>
+        <div><div class="rmap-title">Редактор с превью в реальном времени</div><div class="rmap-desc">Разметка и результат рядом, без отправки формы для проверки.</div></div>
+        <span class="rmap-status next">Скоро</span>
+      </div>
+      <div class="rmap-row">
+        <span class="rmap-ver mono">v1.2</span>
+        <div><div class="rmap-title">Загрузка изображений и файлов</div><div class="rmap-desc">Медиа хранится вместе со страницей, а не по внешним ссылкам.</div></div>
+        <span class="rmap-status next">Скоро</span>
+      </div>
+      <div class="rmap-row">
+        <span class="rmap-ver mono">v1.3</span>
+        <div><div class="rmap-title">Готовые шаблоны страниц</div><div class="rmap-desc">Набор заготовок для лендингов, визиток и форм.</div></div>
+        <span class="rmap-status later">Позже</span>
+      </div>
+      <div class="rmap-row">
+        <span class="rmap-ver mono">v1.4</span>
+        <div><div class="rmap-title">Свои домены и аналитика</div><div class="rmap-desc">Подключение собственного домена и счётчик просмотров.</div></div>
+        <span class="rmap-status later">Позже</span>
+      </div>
+      <div class="rmap-row">
+        <span class="rmap-ver mono">v2.0</span>
+        <div><div class="rmap-title">Командная работа</div><div class="rmap-desc">Совместное редактирование страниц и роли участников.</div></div>
+        <span class="rmap-status later">Позже</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><hr class="divider"></div>
+
+<section id="pricing">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Тарифы</span>
+      <h2>Пока всё бесплатно — цены появятся с ростом сервиса</h2>
+      <p>Ориентировочная структура тарифов на будущее. Текущие пользователи работают на бесплатном плане без ограничений.</p>
+    </div>
+
+    <div class="grid-pricing">
+      <div class="price-card">
+        <h3>Free</h3>
+        <div class="price">0 <span>сум / мес</span></div>
+        <div class="price-desc">Для личных и учебных проектов</div>
+        <ul>
+          <li>До 10 страниц</li>
+          <li>Стандартный адрес ltgpage.uz</li>
+          <li>Доступ к REST API</li>
+          <li class="off">Свой домен</li>
+          <li class="off">Аналитика переходов</li>
+        </ul>
+        <a href="#" class="btn btn-ghost btn-block">Начать бесплатно</a>
+      </div>
+      <div class="price-card pop">
+        <h3>Pro</h3>
+        <div class="price">— <span>скоро</span></div>
+        <div class="price-desc">Для фрилансеров и небольших студий</div>
+        <ul>
+          <li>Неограниченное число страниц</li>
+          <li>Один собственный домен</li>
+          <li>История версий страницы</li>
+          <li>Загрузка изображений</li>
+          <li class="off">Командный доступ</li>
+        </ul>
+        <a href="#" class="btn btn-primary btn-block">Узнать о запуске</a>
+      </div>
+      <div class="price-card">
+        <h3>Business</h3>
+        <div class="price">— <span>скоро</span></div>
+        <div class="price-desc">Для команд и агентств</div>
+        <ul>
+          <li>Всё из тарифа Pro</li>
+          <li>Несколько доменов</li>
+          <li>Роли и совместный доступ</li>
+          <li>Аналитика и отчёты</li>
+          <li>Приоритетная поддержка</li>
+        </ul>
+        <a href="#" class="btn btn-ghost btn-block">Оставить заявку</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap"><hr class="divider"></div>
+
+<section id="faq">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">Вопросы и ответы</span>
+      <h2>Частые вопросы о сервисе</h2>
+    </div>
+
+    <div class="faq">
+      <div class="faq-item open">
+        <button class="faq-q">Нужен ли свой сервер, чтобы опубликовать страницу?<span class="plus">+</span></button>
+        <div class="faq-a"><p>Нет. Разметка отправляется через API и хранится на стороне LTGPage — сразу становится доступна по ссылке вида <code class="mono">/view/&lt;id&gt;/</code>.</p></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">Может ли кто-то другой отредактировать мою страницу?<span class="plus">+</span></button>
+        <div class="faq-a"><p>Нет. Изменение и удаление доступно только владельцу — доступ проверяется по JWT-токену при каждом запросе.</p></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">Нужна ли авторизация, чтобы открыть опубликованную страницу?<span class="plus">+</span></button>
+        <div class="faq-a"><p>Нет. Просмотр страницы по ссылке публичный — вход требуется только для создания и редактирования.</p></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">Можно ли использовать сервис через API, а не через кабинет?<span class="plus">+</span></button>
+        <div class="faq-a"><p>Да. Кабинет — это интерфейс поверх тех же эндпоинтов, которые доступны напрямую для интеграции в свои скрипты и боты.</p></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q">Что будет с бесплатным планом после выхода платных тарифов?<span class="plus">+</span></button>
+        <div class="faq-a"><p>Уже созданные страницы и текущие лимиты бесплатного плана сохранятся — платные тарифы добавляют возможности, а не отбирают их.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+  <div class="cta-band">
+    <div>
+      <h2>Готов опубликовать свою первую страницу?</h2>
+      <p>Регистрация занимает меньше минуты. Дальше — только заголовок, описание и HTML.</p>
+    </div>
+    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+      <a href="#" class="btn btn-primary" id="btnCtaCreate">Создать аккаунт</a>
+      <a href="#api" class="btn btn-ghost">Смотреть API</a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <a href="#" class="brand"><span class="tag-glyph">&lt;/&gt;</span><span>LTGPage</span></a>
+        <p>Движок для публикации HTML-страниц по прямой ссылке. Разрабатывается в Нукусе командой QIT.</p>
+      </div>
+      <div class="foot-col">
+        <h5>Продукт</h5>
+        <ul>
+          <li><a href="#features">Возможности</a></li>
+          <li><a href="#how">Как это работает</a></li>
+          <li><a href="#pricing">Тарифы</a></li>
+          <li><a href="#roadmap">Дорожная карта</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h5>Разработчикам</h5>
+        <ul>
+          <li><a href="#api">REST API</a></li>
+          <li><a href="#">Документация</a></li>
+          <li><a href="#">Статус сервиса</a></li>
+          <li><a href="#">Список изменений</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h5>Компания</h5>
+        <ul>
+          <li><a href="#">О QIT</a></li>
+          <li><a href="#">Контакты</a></li>
+          <li><a href="#">Нукус, Каракалпакстан</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h5>Юридическое</h5>
+        <ul>
+          <li><a href="#">Условия использования</a></li>
+          <li><a href="#">Конфиденциальность</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 LTGPage · продукт QIT Company</span>
+      <span class="badge-ver mono">v1.0 · первая версия</span>
+    </div>
+  </div>
+</footer>
+</div><!-- /publicContent -->
+
+<div id="adminPanel" class="admin-panel">
+  <header class="admin-header">
+    <div class="wrap admin-header-inner">
+      <div class="admin-brand">
+        <span class="tag-glyph">&lt;/&gt;</span>
+        <span>LTGPage <span class="admin-tag">admin</span></span>
+      </div>
+      <div class="admin-header-actions">
+        <span class="user-pill" id="adminUserPill"><span class="dotgreen"></span>admin</span>
+        <a href="#" class="btn btn-ghost btn-sm" id="btnAdminLogout">Выйти</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap admin-body">
+    <div class="admin-tabs">
+      <button class="admin-tab active" data-tab="pages">Страницы <span class="admin-count" id="countPages">—</span></button>
+      <button class="admin-tab" data-tab="users">Пользователи <span class="admin-count" id="countUsers">—</span></button>
+    </div>
+
+    <div class="admin-panel-section" id="adminPagesSection">
+      <div class="admin-toolbar">
+        <input type="text" id="adminPagesSearch" placeholder="Поиск по названию или ID...">
+        <button class="btn btn-primary btn-sm" id="btnAdminNewPage">+ Новая страница</button>
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>ID</th><th>Название</th><th>Владелец</th><th>Обновлена</th><th></th></tr></thead>
+          <tbody id="adminPagesBody"><tr><td colspan="5" class="admin-loading">загружаю страницы...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="admin-panel-section" id="adminUsersSection" style="display:none;">
+      <div class="admin-toolbar">
+        <input type="text" id="adminUsersSearch" placeholder="Поиск по логину или email...">
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>ID</th><th>Логин</th><th>Email</th><th>Роль</th><th>Статус</th><th></th></tr></thead>
+          <tbody id="adminUsersBody"><tr><td colspan="6" class="admin-loading">загружаю пользователей...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* =====================================================
+     LTGPage — интеграция с бэкендом
+     ===================================================== */
+  const API_BASE = 'https://dawletyar.pythonanywhere.com';
+
+  const LS_ACCESS = 'ltg_access';
+  const LS_REFRESH = 'ltg_refresh';
+
+  function saveTokens(access, refresh){
+    localStorage.setItem(LS_ACCESS, access);
+    if(refresh) localStorage.setItem(LS_REFRESH, refresh);
+  }
+  function getAccess(){ return localStorage.getItem(LS_ACCESS); }
+  function getRefresh(){ return localStorage.getItem(LS_REFRESH); }
+  function clearTokens(){ localStorage.removeItem(LS_ACCESS); localStorage.removeItem(LS_REFRESH); }
+
+  function decodeJWT(token){
+    try{
+      const payload = token.split('.')[1];
+      const json = decodeURIComponent(atob(payload.replace(/-/g,'+').replace(/_/g,'/')).split('').map(c =>
+        '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+      return JSON.parse(json);
+    }catch(e){ return null; }
+  }
+
+  function currentUserId(){
+    const t = getAccess();
+    if(!t) return null;
+    const p = decodeJWT(t);
+    return p ? (p.user_id ?? null) : null;
+  }
+
+  function isLoggedIn(){ return !!getAccess(); }
+
+  function showToast(msg, type){
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'toast show' + (type ? ' ' + type : '');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => el.classList.remove('show'), 3400);
+  }
+
+  async function apiFetch(path, options, retry){
+    options = options || {};
+    options.headers = Object.assign({}, options.headers);
+    const access = getAccess();
+    if(access) options.headers['Authorization'] = 'Bearer ' + access;
+    const res = await fetch(API_BASE + path, options);
+    if(res.status === 401 && !retry){
+      const refreshed = await tryRefreshToken();
+      if(refreshed) return apiFetch(path, options, true);
+    }
+    return res;
+  }
+
+  async function tryRefreshToken(){
+    const refresh = getRefresh();
+    if(!refresh) return false;
+    try{
+      const res = await fetch(API_BASE + '/api/refresh/', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ refresh })
+      });
+      if(!res.ok) { clearTokens(); return false; }
+      const data = await res.json();
+      saveTokens(data.access, refresh);
+      return true;
+    }catch(e){ clearTokens(); return false; }
+  }
+
+  /* ---------- Auth UI ---------- */
+  const authOverlay = document.getElementById('authOverlay');
+  const pageOverlay = document.getElementById('pageOverlay');
+  const navAuthActions = document.getElementById('navAuthActions');
+
+  function openAuth(tab){
+    authOverlay.classList.add('open');
+    setAuthTab(tab || 'login');
+  }
+  function closeAuth(){ authOverlay.classList.remove('open'); }
+  let editingPageId = null;
+  let ideDebounce = null;
+
+  function updateIdePreview(){
+    const frame = document.getElementById('idePreviewFrame');
+    frame.srcdoc = document.getElementById('ideHtmlInput').value || '<!doctype html><body style="font-family:sans-serif;color:#999;padding:30px;">Пусто — начни печатать HTML слева.</body>';
+  }
+
+  function updateIdeLineCount(){
+    const lines = document.getElementById('ideHtmlInput').value.split('\n').length;
+    document.getElementById('ideLineCount').textContent = lines + (lines === 1 ? ' строка' : lines < 5 ? ' строки' : ' строк');
+  }
+
+  function openPageModal(page){
+    if(!isLoggedIn()){ openAuth('login'); showToast('Сначала войди в аккаунт', 'error'); return; }
+    const form = document.getElementById('createPageForm');
+    const status = document.getElementById('ideStatus');
+    const submitBtn = document.getElementById('pageSubmitBtn');
+    if(page){
+      editingPageId = page.id;
+      form.title.value = page.title || '';
+      form.description.value = page.description || '';
+      form.html.value = page.html || '';
+      status.textContent = 'редактирование #' + page.id;
+      submitBtn.textContent = 'Сохранить изменения';
+    } else {
+      editingPageId = null;
+      form.reset();
+      status.textContent = 'новая страница';
+      submitBtn.textContent = 'Опубликовать';
+    }
+    document.getElementById('pageError').classList.remove('show');
+    pageOverlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    updateIdePreview();
+    updateIdeLineCount();
+    setTimeout(() => document.getElementById('ideTitleInput').focus(), 50);
+  }
+  function closePageModal(){
+    pageOverlay.classList.remove('open');
+    document.body.style.overflow = '';
+    editingPageId = null;
+  }
+
+  const ideHtmlInput = document.getElementById('ideHtmlInput');
+  ideHtmlInput.addEventListener('input', () => {
+    updateIdeLineCount();
+    clearTimeout(ideDebounce);
+    ideDebounce = setTimeout(updateIdePreview, 350);
+  });
+  ideHtmlInput.addEventListener('keydown', e => {
+    if(e.key === 'Tab'){
+      e.preventDefault();
+      const start = ideHtmlInput.selectionStart, end = ideHtmlInput.selectionEnd;
+      ideHtmlInput.value = ideHtmlInput.value.slice(0, start) + '  ' + ideHtmlInput.value.slice(end);
+      ideHtmlInput.selectionStart = ideHtmlInput.selectionEnd = start + 2;
+      updateIdeLineCount();
+      clearTimeout(ideDebounce);
+      ideDebounce = setTimeout(updateIdePreview, 350);
+    }
+  });
+  document.getElementById('ideRefreshBtn').addEventListener('click', updateIdePreview);
+
+  function setAuthTab(tab){
+    document.querySelectorAll('.modal-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    document.getElementById('loginForm').style.display = tab === 'login' ? 'flex' : 'none';
+    document.getElementById('registerForm').style.display = tab === 'register' ? 'flex' : 'none';
+  }
+
+  document.querySelectorAll('.modal-tab').forEach(btn => {
+    btn.addEventListener('click', () => setAuthTab(btn.dataset.tab));
+  });
+  document.getElementById('authClose').addEventListener('click', closeAuth);
+  document.getElementById('pageClose').addEventListener('click', e => { e.preventDefault(); closePageModal(); });
+  authOverlay.addEventListener('click', e => { if(e.target === authOverlay) closeAuth(); });
+
+  ['btnLogin'].forEach(id => document.getElementById(id)?.addEventListener('click', e => { e.preventDefault(); openAuth('login'); }));
+  ['btnRegister','btnHeroCreate','btnCtaCreate'].forEach(id => document.getElementById(id)?.addEventListener('click', e => {
+    e.preventDefault();
+    if(isLoggedIn()) openPageModal(); else openAuth('register');
+  }));
+  document.getElementById('btnNewPage').addEventListener('click', e => { e.preventDefault(); openPageModal(); });
+
+  function renderAuthActions(){
+    const drawerAuth = document.getElementById('drawerAuthActions');
+    if(isLoggedIn()){
+      navAuthActions.innerHTML = `
+        <a href="#" class="btn btn-ghost btn-sm" id="btnLogout">Выйти</a>
+        <a href="#" class="btn btn-primary btn-sm" id="btnNewPageNav">+ Страница</a>
+        <button class="nav-toggle" aria-label="Меню">☰</button>
+      `;
+      document.getElementById('btnLogout').addEventListener('click', e => { e.preventDefault(); clearTokens(); setAdminMode(false); renderAuthActions(); loadMyPages(); showToast('Вы вышли из аккаунта'); });
+      document.getElementById('btnNewPageNav').addEventListener('click', e => { e.preventDefault(); openPageModal(); });
+
+      drawerAuth.innerHTML = `
+        <a href="#" class="btn btn-primary btn-block" id="btnNewPageDrawer">+ Новая страница</a>
+        <a href="#" class="btn btn-ghost btn-block" id="btnLogoutDrawer">Выйти</a>
+      `;
+      document.getElementById('btnNewPageDrawer').addEventListener('click', e => { e.preventDefault(); document.getElementById('mobileDrawer').classList.remove('open'); openPageModal(); });
+      document.getElementById('btnLogoutDrawer').addEventListener('click', e => { e.preventDefault(); clearTokens(); setAdminMode(false); renderAuthActions(); loadMyPages(); showToast('Вы вышли из аккаунта'); document.getElementById('mobileDrawer').classList.remove('open'); });
+    } else {
+      navAuthActions.innerHTML = `
+        <a href="#" class="btn btn-ghost btn-sm" id="btnLogin">Войти</a>
+        <a href="#" class="btn btn-primary btn-sm" id="btnRegister">Начать бесплатно</a>
+        <button class="nav-toggle" aria-label="Меню">☰</button>
+      `;
+      document.getElementById('btnLogin').addEventListener('click', e => { e.preventDefault(); openAuth('login'); });
+      document.getElementById('btnRegister').addEventListener('click', e => { e.preventDefault(); openAuth('register'); });
+
+      drawerAuth.innerHTML = `
+        <a href="#" class="btn btn-ghost btn-block" id="btnLoginDrawer">Войти</a>
+        <a href="#" class="btn btn-primary btn-block" id="btnRegisterDrawer">Начать бесплатно</a>
+      `;
+      document.getElementById('btnLoginDrawer').addEventListener('click', e => { e.preventDefault(); document.getElementById('mobileDrawer').classList.remove('open'); openAuth('login'); });
+      document.getElementById('btnRegisterDrawer').addEventListener('click', e => { e.preventDefault(); document.getElementById('mobileDrawer').classList.remove('open'); openAuth('register'); });
+    }
+    document.querySelector('.nav-toggle').addEventListener('click', toggleMobileNav);
+  }
+
+  /* ---------- Login / Register ---------- */
+  document.getElementById('loginForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const errBox = document.getElementById('loginError');
+    errBox.classList.remove('show');
+    const fd = new FormData(e.target);
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.textContent = 'Вхожу...'; btn.disabled = true;
+    try{
+      const res = await fetch(API_BASE + '/api/token/', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ username: fd.get('username'), password: fd.get('password') })
+      });
+      const data = await res.json();
+      if(!res.ok){
+        errBox.textContent = data.detail || 'Неверный логин или пароль';
+        errBox.classList.add('show');
+        return;
+      }
+      saveTokens(data.access, data.refresh);
+      closeAuth();
+      renderAuthActions();
+      loadMyPages();
+      checkAdminMode();
+      showToast('Добро пожаловать!', 'success');
+      e.target.reset();
+    }catch(err){
+      errBox.textContent = 'Не получилось связаться с сервером. Проверь соединение.';
+      errBox.classList.add('show');
+    }finally{
+      btn.textContent = 'Войти'; btn.disabled = false;
+    }
+  });
+
+  document.getElementById('registerForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const errBox = document.getElementById('registerError');
+    errBox.classList.remove('show');
+    const fd = new FormData(e.target);
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.textContent = 'Создаю...'; btn.disabled = true;
+    try{
+      const body = { username: fd.get('username'), password: fd.get('password') };
+      if(fd.get('email')) body.email = fd.get('email');
+      const res = await fetch(API_BASE + '/api/user/', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if(!res.ok){
+        errBox.textContent = Object.values(data).flat().join(' ') || 'Не удалось создать аккаунт';
+        errBox.classList.add('show');
+        return;
+      }
+      showToast('Аккаунт создан, теперь войди', 'success');
+      setAuthTab('login');
+      document.getElementById('loginForm').username.value = fd.get('username');
+      e.target.reset();
+    }catch(err){
+      errBox.textContent = 'Не получилось связаться с сервером. Проверь соединение.';
+      errBox.classList.add('show');
+    }finally{
+      btn.textContent = 'Создать аккаунт'; btn.disabled = false;
+    }
+  });
+
+  /* ---------- Create / edit page ---------- */
+  document.getElementById('createPageForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const errBox = document.getElementById('pageError');
+    errBox.classList.remove('show');
+    const fd = new FormData(e.target);
+    const btn = document.getElementById('pageSubmitBtn');
+    const isEdit = !!editingPageId;
+    btn.textContent = isEdit ? 'Сохраняю...' : 'Публикую...'; btn.disabled = true;
+    try{
+      const res = await apiFetch(isEdit ? `/api/page/${editingPageId}/` : '/api/page/', {
+        method: isEdit ? 'PATCH' : 'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          title: fd.get('title'),
+          description: fd.get('description'),
+          html: fd.get('html')
+        })
+      });
+      const data = await res.json();
+      if(!res.ok){
+        errBox.textContent = Object.values(data).flat().join(' ') || 'Не удалось сохранить страницу';
+        errBox.classList.add('show');
+        return;
+      }
+      closePageModal();
+      e.target.reset();
+      showToast(isEdit ? 'Изменения сохранены' : 'Страница опубликована', 'success');
+      loadMyPages();
+      if(document.body.classList.contains('admin-mode')) loadAdminPages();
+      if(!isEdit){
+        const link = location.origin + pageRoutePath(data.id, data.title);
+        navigator.clipboard?.writeText(link).catch(()=>{});
+        showToast('Ссылка скопирована: ' + link, 'success');
+      }
+    }catch(err){
+      errBox.textContent = 'Не получилось связаться с сервером. Проверь соединение.';
+      errBox.classList.add('show');
+    }finally{
+      btn.textContent = isEdit ? 'Сохранить изменения' : 'Опубликовать'; btn.disabled = false;
+    }
+  });
+
+  /* ---------- Dashboard ---------- */
+  function fmtDate(iso){
+    if(!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleDateString('ru-RU', { day:'2-digit', month:'short' }) + ', ' +
+           d.toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' });
+  }
+
+  async function loadMyPages(){
+    const table = document.getElementById('dashTable');
+    const dashTitle = document.getElementById('dashTitle');
+
+    if(!isLoggedIn()){
+      table.innerHTML = `
+        <div class="dash-row head-row"><span>Название</span><span>Статус</span><span>Изменена</span><span>Ссылка</span></div>
+        <div class="dash-empty">Войди в аккаунт, чтобы увидеть свои страницы — или создай первую прямо сейчас.</div>`;
+      dashTitle.textContent = 'Мои страницы';
+      return;
+    }
+
+    table.innerHTML = `
+      <div class="dash-row head-row"><span>Название</span><span>Статус</span><span>Изменена</span><span>Ссылка</span></div>
+      <div class="dash-loading">загружаю страницы с dawletyar.pythonanywhere.com...</div>`;
+
+    try{
+      const res = await apiFetch('/api/page/', { method:'GET' });
+      if(!res.ok) throw new Error('bad status');
+      const data = await res.json();
+      const list = Array.isArray(data) ? data : (data.results || []);
+      const uid = currentUserId();
+      const mine = uid != null ? list.filter(p => p.user === uid) : list;
+
+      dashTitle.textContent = `Мои страницы (${mine.length})`;
+
+      if(mine.length === 0){
+        table.innerHTML = `
+          <div class="dash-row head-row"><span>Название</span><span>Статус</span><span>Изменена</span><span>Ссылка</span></div>
+          <div class="dash-empty">Страниц пока нет — нажми «+ Новая страница», чтобы опубликовать первую.</div>`;
+        return;
+      }
+
+      const rows = mine.map(p => `
+        <div class="dash-row">
+          <div class="page-name"><span class="title">${escapeHtml(p.title)}</span><span class="url">${pageRoutePath(p.id, p.title)}</span></div>
+          <span class="pill pub">опубликовано</span>
+          <span>${fmtDate(p.updated_at)}</span>
+          <a class="mono page-open-link" style="font-size:12px;color:var(--accent-2);" href="${pageRoutePath(p.id, p.title)}" data-page-id="${p.id}" data-page-title="${escapeHtml(p.title)}">открыть →</a>
+        </div>`).join('');
+
+      table.innerHTML = `<div class="dash-row head-row"><span>Название</span><span>Статус</span><span>Изменена</span><span>Ссылка</span></div>` + rows;
+    }catch(err){
+      table.innerHTML = `
+        <div class="dash-row head-row"><span>Название</span><span>Статус</span><span>Изменена</span><span>Ссылка</span></div>
+        <div class="dash-empty">Не удалось загрузить страницы с сервера. Попробуй обновить страницу позже.</div>`;
+    }
+  }
+
+  function escapeHtml(str){
+    const d = document.createElement('div');
+    d.textContent = str ?? '';
+    return d.innerHTML;
+  }
+
+  function truncate(str, n){
+    if(!str) return '';
+    return str.length > n ? str.slice(0, n).trim() + '…' : str;
+  }
+
+  function fmtShortDate(iso){
+    if(!iso) return '';
+    const d = new Date(iso);
+    return d.toLocaleDateString('ru-RU', { day:'2-digit', month:'short', year:'numeric' });
+  }
+
+  /* =====================================================
+     Просмотр опубликованной страницы через свой фронт
+     (HTML тянется с бэка и рендерится тут же, урл бэка не светим)
+     ===================================================== */
+  const CYR_MAP = {а:'a',б:'b',в:'v',г:'g',д:'d',е:'e',ё:'e',ж:'zh',з:'z',и:'i',й:'y',к:'k',л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s',т:'t',у:'u',ф:'f',х:'h',ц:'c',ч:'ch',ш:'sh',щ:'sch',ъ:'',ы:'y',ь:'',э:'e',ю:'yu',я:'ya'};
+
+  function slugify(str){
+    return (str || '')
+      .toLowerCase()
+      .split('')
+      .map(ch => CYR_MAP[ch] !== undefined ? CYR_MAP[ch] : ch)
+      .join('')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 40) || 'page';
+  }
+
+  function pageRoutePath(id, title){
+    return '/p/' + slugify(title) + '-' + id + '/';
+  }
+
+  function parsePageIdFromPath(pathname){
+    const m = pathname.match(/^\/p\/(?:[a-z0-9-]*-)?(\d+)\/?$/);
+    return m ? Number(m[1]) : null;
+  }
+
+  async function openPageViewer(id, title, push){
+    const overlay = document.getElementById('pageViewerOverlay');
+    const frame = document.getElementById('pageViewerFrame');
+    const label = document.getElementById('pageViewerLabel');
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    label.textContent = title || ('Страница #' + id);
+    frame.srcdoc = '<!doctype html><body style="font-family:sans-serif;padding:40px;color:#999;">Загрузка…</body>';
+    if(push !== false){
+      history.pushState({ ltgPageId: id, ltgPageTitle: title || null }, '', pageRoutePath(id, title));
+    }
+    try{
+      const res = await fetch(API_BASE + '/api/page/view/' + id + '/');
+      if(!res.ok) throw new Error('not found');
+      const html = await res.text();
+      frame.srcdoc = html;
+    }catch(err){
+      frame.srcdoc = '<!doctype html><body style="font-family:sans-serif;padding:40px;color:#c33;">Не удалось загрузить страницу. Возможно, она была удалена.</body>';
+    }
+  }
+
+  function closePageViewer(push){
+    document.getElementById('pageViewerOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+    if(push !== false && parsePageIdFromPath(location.pathname) != null){
+      history.pushState({}, '', '/');
+    }
+  }
+
+  document.getElementById('pageViewerClose').addEventListener('click', () => closePageViewer(true));
+
+  window.addEventListener('popstate', () => {
+    const id = parsePageIdFromPath(location.pathname);
+    if(id != null) openPageViewer(id, (history.state && history.state.ltgPageTitle) || null, false);
+    else closePageViewer(false);
+  });
+
+  // клик по любой ссылке "Открыть" — перехватываем и рендерим у себя, без ухода на бэк
+  document.addEventListener('click', e => {
+    const link = e.target.closest('.page-open-link');
+    if(!link) return;
+    if(e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return; // даём браузеру открыть новую вкладку как обычно
+    e.preventDefault();
+    openPageViewer(Number(link.dataset.pageId), link.dataset.pageTitle || null, true);
+  });
+
+  // если зашли по прямой ссылке /p/.../ — сразу открываем вьюер
+  (function initPageRoute(){
+    const id = parsePageIdFromPath(location.pathname);
+    if(id != null) openPageViewer(id, null, false);
+  })();
+
+  async function loadPortfolio(){
+    const grid = document.getElementById('portfolioGrid');
+    try{
+      const res = await fetch(API_BASE + '/api/page/');
+      if(!res.ok) throw new Error('bad status');
+      const data = await res.json();
+      const list = Array.isArray(data) ? data : (data.results || []);
+
+      if(list.length === 0){
+        grid.innerHTML = `<div class="portfolio-empty">Здесь пока пусто — стань первым, кто опубликует страницу через LTGPage.</div>`;
+        return;
+      }
+
+      const items = list.slice(0, 6);
+      grid.innerHTML = items.map(p => `
+        <div class="port-card">
+          <div class="port-head">
+            <span class="status live">Опубликовано</span>
+            <span class="port-date">${fmtShortDate(p.created_at)}</span>
+          </div>
+          <h3>${escapeHtml(p.title)}</h3>
+          <p class="pdesc">${escapeHtml(truncate(p.description, 120))}</p>
+          <div class="port-foot">
+            <span class="port-id">${pageRoutePath(p.id, p.title)}</span>
+            <a class="port-link page-open-link" href="${pageRoutePath(p.id, p.title)}" data-page-id="${p.id}" data-page-title="${escapeHtml(p.title)}">Открыть →</a>
+          </div>
+        </div>
+      `).join('');
+    }catch(err){
+      grid.innerHTML = `<div class="portfolio-error">Не удалось загрузить страницы с сервера. Попробуй обновить позже.</div>`;
+    }
+  }
+
+  function toggleMobileNav(){
+    document.getElementById('mobileDrawer').classList.toggle('open');
+  }
+
+  /* =====================================================
+     Админ-панель (is_superuser)
+     ===================================================== */
+  let adminPagesCache = [];
+  let adminUsersCache = [];
+
+  async function fetchCurrentUser(){
+    const uid = currentUserId();
+    if(uid == null) return null;
+    try{
+      const res = await apiFetch('/api/user/' + uid + '/', { method:'GET' });
+      if(!res.ok) return null;
+      return await res.json();
+    }catch(e){ return null; }
+  }
+
+  async function checkAdminMode(){
+    if(!isLoggedIn()){ setAdminMode(false); return; }
+    const user = await fetchCurrentUser();
+    if(user && user.is_superuser){
+      setAdminMode(true, user);
+    } else {
+      setAdminMode(false);
+    }
+  }
+
+  function setAdminMode(on, user){
+    document.body.classList.toggle('admin-mode', on);
+    if(on){
+      document.getElementById('adminUserPill').innerHTML =
+        `<span class="dotgreen"></span>${escapeHtml(user.username)} · superuser`;
+      document.getElementById('btnAdminLogout').onclick = e => {
+        e.preventDefault(); clearTokens(); setAdminMode(false);
+        renderAuthActions(); loadMyPages(); showToast('Вы вышли из аккаунта');
+      };
+      loadAdminPages();
+      loadAdminUsers();
+      window.scrollTo(0,0);
+    }
+  }
+
+  document.querySelectorAll('.admin-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.admin-tab').forEach(t => t.classList.toggle('active', t === tab));
+      const isPages = tab.dataset.tab === 'pages';
+      document.getElementById('adminPagesSection').style.display = isPages ? 'block' : 'none';
+      document.getElementById('adminUsersSection').style.display = isPages ? 'none' : 'block';
+    });
+  });
+
+  document.getElementById('btnAdminNewPage').addEventListener('click', e => { e.preventDefault(); openPageModal(); });
+
+  async function loadAdminPages(){
+    const body = document.getElementById('adminPagesBody');
+    body.innerHTML = `<tr><td colspan="5" class="admin-loading">загружаю страницы...</td></tr>`;
+    try{
+      const res = await apiFetch('/api/page/', { method:'GET' });
+      if(!res.ok) throw new Error('bad status');
+      const data = await res.json();
+      adminPagesCache = Array.isArray(data) ? data : (data.results || []);
+      document.getElementById('countPages').textContent = adminPagesCache.length;
+      renderAdminPages(adminPagesCache);
+    }catch(err){
+      body.innerHTML = `<tr><td colspan="5" class="admin-empty">Не удалось загрузить страницы</td></tr>`;
+    }
+  }
+
+  function renderAdminPages(list){
+    const body = document.getElementById('adminPagesBody');
+    if(list.length === 0){
+      body.innerHTML = `<tr><td colspan="5" class="admin-empty">Страниц не найдено</td></tr>`;
+      return;
+    }
+    body.innerHTML = list.map(p => `
+      <tr>
+        <td class="id-col">#${p.id}</td>
+        <td class="title-col">${escapeHtml(p.title)}</td>
+        <td>${p.user != null ? 'user #' + p.user : '—'}</td>
+        <td>${fmtShortDate(p.updated_at)}</td>
+        <td>
+          <div class="row-actions">
+            <a class="row-btn page-open-link" href="${pageRoutePath(p.id, p.title)}" data-page-id="${p.id}" data-page-title="${escapeHtml(p.title)}">Открыть</a>
+            <button class="row-btn" data-edit-page="${p.id}">Изменить</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+    body.querySelectorAll('[data-edit-page]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = Number(btn.dataset.editPage);
+        const page = adminPagesCache.find(p => p.id === id);
+        if(page) openPageModal(page);
+      });
+    });
+  }
+
+  document.getElementById('adminPagesSearch').addEventListener('input', e => {
+    const q = e.target.value.trim().toLowerCase();
+    const filtered = adminPagesCache.filter(p =>
+      String(p.id).includes(q) || (p.title || '').toLowerCase().includes(q));
+    renderAdminPages(filtered);
+  });
+
+  async function loadAdminUsers(){
+    const body = document.getElementById('adminUsersBody');
+    body.innerHTML = `<tr><td colspan="6" class="admin-loading">загружаю пользователей...</td></tr>`;
+    try{
+      const res = await apiFetch('/api/user/', { method:'GET' });
+      if(!res.ok) throw new Error('bad status');
+      const data = await res.json();
+      adminUsersCache = Array.isArray(data) ? data : (data.results || []);
+      document.getElementById('countUsers').textContent = adminUsersCache.length;
+      renderAdminUsers(adminUsersCache);
+    }catch(err){
+      body.innerHTML = `<tr><td colspan="6" class="admin-empty">Не удалось загрузить пользователей</td></tr>`;
+    }
+  }
+
+  function roleBadge(u){
+    if(u.is_superuser) return '<span class="role-badge super">superuser</span>';
+    if(u.is_staff) return '<span class="role-badge staff">staff</span>';
+    return '<span class="role-badge user">user</span>';
+  }
+
+  function renderAdminUsers(list){
+    const body = document.getElementById('adminUsersBody');
+    if(list.length === 0){
+      body.innerHTML = `<tr><td colspan="6" class="admin-empty">Пользователей не найдено</td></tr>`;
+      return;
+    }
+    const myId = currentUserId();
+    body.innerHTML = list.map(u => `
+      <tr>
+        <td class="id-col">#${u.id}</td>
+        <td class="title-col">${escapeHtml(u.username)}${u.id === myId ? ' <span class="port-date">(вы)</span>' : ''}</td>
+        <td>${escapeHtml(u.email || '—')}</td>
+        <td>${roleBadge(u)}</td>
+        <td>${u.is_active ? '<span class="role-badge user" style="color:var(--mint);border-color:rgba(126,231,198,0.3);background:rgba(126,231,198,0.07);">активен</span>' : '<span class="role-badge user" style="color:#ff8266;border-color:rgba(255,75,43,0.25);background:rgba(255,75,43,0.07);">отключён</span>'}</td>
+        <td>
+          <div class="row-actions">
+            <button class="row-btn" data-toggle-active="${u.id}" data-state="${u.is_active ? '0' : '1'}">${u.is_active ? 'Отключить' : 'Включить'}</button>
+            ${u.id !== myId ? `<button class="row-btn danger" data-delete-user="${u.id}">Удалить</button>` : ''}
+          </div>
+        </td>
+      </tr>
+    `).join('');
+
+    body.querySelectorAll('[data-toggle-active]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.toggleActive;
+        const newState = btn.dataset.state === '1';
+        btn.disabled = true;
+        try{
+          const res = await apiFetch(`/api/user/${id}/`, {
+            method:'PATCH',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ is_active: newState })
+          });
+          if(!res.ok) throw new Error('bad status');
+          showToast(newState ? 'Пользователь включён' : 'Пользователь отключён', 'success');
+          loadAdminUsers();
+        }catch(err){
+          showToast('Не удалось изменить статус', 'error');
+          btn.disabled = false;
+        }
+      });
+    });
+
+    body.querySelectorAll('[data-delete-user]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.deleteUser;
+        if(!confirm('Удалить пользователя #' + id + '? Это необратимо.')) return;
+        btn.disabled = true;
+        try{
+          const res = await apiFetch(`/api/user/${id}/`, { method:'DELETE' });
+          if(!res.ok && res.status !== 204) throw new Error('bad status');
+          showToast('Пользователь удалён', 'success');
+          loadAdminUsers();
+        }catch(err){
+          showToast('Не удалось удалить пользователя', 'error');
+          btn.disabled = false;
+        }
+      });
+    });
+  }
+
+  document.getElementById('adminUsersSearch').addEventListener('input', e => {
+    const q = e.target.value.trim().toLowerCase();
+    const filtered = adminUsersCache.filter(u =>
+      (u.username || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q));
+    renderAdminUsers(filtered);
+  });
+
+  document.getElementById('mobileDrawer').addEventListener('click', e => {
+    if(e.target.tagName === 'A') document.getElementById('mobileDrawer').classList.remove('open');
+  });
+
+  document.addEventListener('click', e => {
+    const drawer = document.getElementById('mobileDrawer');
+    if(!drawer.classList.contains('open')) return;
+    if(drawer.contains(e.target) || e.target.closest('.nav-toggle')) return;
+    drawer.classList.remove('open');
+  });
+
+  renderAuthActions();
+  loadMyPages();
+  loadPortfolio();
+  checkAdminMode();
+
+  // FAQ аккордеон
+  document.querySelectorAll('.faq-item').forEach(item => {
+    const q = item.querySelector('.faq-q');
+    const a = item.querySelector('.faq-a');
+    if(item.classList.contains('open')){ a.style.maxHeight = a.scrollHeight + 'px'; }
+    q.addEventListener('click', () => {
+      const isOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item.open').forEach(el => {
+        el.classList.remove('open');
+        el.querySelector('.faq-a').style.maxHeight = null;
+      });
+      if(!isOpen){
+        item.classList.add('open');
+        a.style.maxHeight = a.scrollHeight + 'px';
+      }
+    });
+  });
+
+  // копирование кода
+  const copyBtn = document.getElementById('copyBtn');
+  if(copyBtn){
+    copyBtn.addEventListener('click', () => {
+      const text = document.querySelector('.code-window pre').innerText;
+      navigator.clipboard?.writeText(text).then(() => {
+        copyBtn.textContent = 'скопировано ✓';
+        setTimeout(() => copyBtn.textContent = 'скопировать', 1600);
+      });
+    });
+  }
+
+  // анимация "печати" HTML в редакторе + переключение превью
+  const demos = [
+    {
+      file: 'promo.html',
+      code: `<span class="tag">&lt;div</span> <span class="attr">class</span>=<span class="str">"promo"</span><span class="tag">&gt;</span>
+  <span class="tag">&lt;span</span> <span class="attr">class</span>=<span class="str">"badge"</span><span class="tag">&gt;</span>Акция<span class="tag">&lt;/span&gt;</span>
+  <span class="tag">&lt;h1&gt;</span>Скидка 20%<span class="tag">&lt;/h1&gt;</span>
+  <span class="tag">&lt;p&gt;</span>на первый заказ<span class="tag">&lt;/p&gt;</span>
+  <span class="tag">&lt;a</span> <span class="attr">href</span>=<span class="str">"#"</span><span class="tag">&gt;</span>Забрать<span class="tag">&lt;/a&gt;</span>
+<span class="tag">&lt;/div&gt;</span>`,
+      url: 'ltgpage.uz/p/8f3a1c',
+      badge: 'Акция', title: 'Скидка 20% на первый заказ',
+      desc: 'Промо-страница, опубликованная за один запрос к API.', btn: 'Забрать скидку'
+    },
+    {
+      file: 'card.html',
+      code: `<span class="tag">&lt;div</span> <span class="attr">class</span>=<span class="str">"card"</span><span class="tag">&gt;</span>
+  <span class="tag">&lt;h1&gt;</span>Shaxrux Dev<span class="tag">&lt;/h1&gt;</span>
+  <span class="tag">&lt;p&gt;</span>Backend · Python · Django<span class="tag">&lt;/p&gt;</span>
+  <span class="tag">&lt;a</span> <span class="attr">href</span>=<span class="str">"tg://qit"</span><span class="tag">&gt;</span>Написать<span class="tag">&lt;/a&gt;</span>
+<span class="tag">&lt;/div&gt;</span>`,
+      url: 'ltgpage.uz/p/19c0e2',
+      badge: 'Визитка', title: 'Shaxrux · Backend разработчик',
+      desc: 'Личная страница вместо ссылки в соцсети.', btn: 'Написать в Telegram'
+    },
+    {
+      file: 'form.html',
+      code: `<span class="tag">&lt;form&gt;</span>
+  <span class="tag">&lt;input</span> <span class="attr">placeholder</span>=<span class="str">"Имя"</span><span class="tag">&gt;</span>
+  <span class="tag">&lt;input</span> <span class="attr">placeholder</span>=<span class="str">"Телефон"</span><span class="tag">&gt;</span>
+  <span class="tag">&lt;button&gt;</span>Записаться<span class="tag">&lt;/button&gt;</span>
+<span class="tag">&lt;/form&gt;</span>`,
+      url: 'ltgpage.uz/p/5b71ad',
+      badge: 'Форма', title: 'Запись на курс QIT',
+      desc: 'Страница сбора заявок без бэкенда под рукой.', btn: 'Записаться'
+    }
+  ];
+
+  const editorPane = document.getElementById('editorPane');
+  const fileLabel = document.getElementById('fileLabel');
+  const previewUrl = document.getElementById('previewUrl');
+  const previewBody = document.getElementById('previewBody');
+  let demoIndex = 0;
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function renderDemo(i, animate){
+    const d = demos[i];
+    fileLabel.textContent = d.file;
+    previewUrl.textContent = d.url;
+    previewBody.innerHTML = `
+      <span class="pb-badge">${d.badge}</span>
+      <h4>${d.title}</h4>
+      <p>${d.desc}</p>
+      <span class="pb-btn">${d.btn}</span>
+    `;
+    if(!animate || reduceMotion){
+      editorPane.innerHTML = d.code + '<span class="cur"></span>';
+      return;
+    }
+    editorPane.innerHTML = '<span class="cur"></span>';
+    let plain = d.code.replace(/<[^>]+>/g, m => '\u0001' + m + '\u0002');
+    // simplified typing: reveal the pre-built HTML progressively by length
+    const full = d.code;
+    let len = 0;
+    const step = Math.max(2, Math.floor(full.length / 60));
+    const interval = setInterval(() => {
+      len += step;
+      if(len >= full.length){
+        editorPane.innerHTML = full + '<span class="cur"></span>';
+        clearInterval(interval);
+        return;
+      }
+      editorPane.innerHTML = full.slice(0, len) + '<span class="cur"></span>';
+    }, 22);
+  }
+
+  renderDemo(0, false);
+
+  if(!reduceMotion){
+    setInterval(() => {
+      demoIndex = (demoIndex + 1) % demos.length;
+      renderDemo(demoIndex, true);
+    }, 5200);
+  }
+</script>
+
+</body>
+</html>
