@@ -5,3 +5,5 @@ python-decouple
 djangorestframework-simplejwt
 Pillow
 google-genai
+psycopg
+dj-database-url
