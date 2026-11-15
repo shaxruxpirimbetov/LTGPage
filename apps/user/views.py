@@ -1,14 +1,19 @@
 from django.contrib.auth import get_user_model
 from rest_framework import generics, permissions
 from rest_framework.response import Response
-from .serializers import UserSerializer, ResponseUserSerializer
+from .serializers import UserSerializer, UpdateUserSerializer, AdminUpdateUserSerializer, ResponseUserSerializer
 from .permissions import IsMe
 
 User = get_user_model()
 
+
 class UserListCreateAPIView(generics.ListCreateAPIView):
-    queryset = User.objects.all()
-    permission_classes = [permissions.AllowAny]
+    queryset = User.objects.all().order_by("id")
+
+    def get_permissions(self):
+        if self.request.method == "POST":
+            return [permissions.AllowAny()]  # registration
+        return [permissions.IsAuthenticated()]
 
     def get_serializer_class(self):
         if self.request.method == "POST":
@@ -24,7 +29,13 @@ class UserListCreateAPIView(generics.ListCreateAPIView):
 
 class UserDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
+
+    def get_serializer_class(self):
+        if self.request.method == "GET":
+            return ResponseUserSerializer
+        if self.request.user.is_superuser:
+            return AdminUpdateUserSerializer
+        return UpdateUserSerializer
 
     def get_permissions(self):
         if self.request.method == "GET":
